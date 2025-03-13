@@ -1,4 +1,4 @@
-# MORPH predicts the single-cell outcome of genetic perturbations across various data modalities
+# MORPH (a modular framework for predicting responses to perturbational changes)
 
 Code for paper: MORPH predicts the single-cell outcome of genetic perturbations across various data modalities
 
