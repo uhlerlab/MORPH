@@ -4,92 +4,44 @@ import torch
 from torch.utils.data import Dataset
 import scanpy as sc
 import pandas as pd
-import json
-import os
 
-# Read in and process the single-cell perturbation dataset
+
 class SCDataset(Dataset):
+    """
+    A PyTorch Dataset class for loading and processing single-cell perturbation data.
+    
+    Attributes:
+        - dataset: Name of the dataset (match with the name in ./data/scdata_file_path.csv).
+        - adata_path: Path to the single-cell AnnData file.
+        - leave_out_test_set: List of perturbation targets to leave out for testing.
+        - ptb_targets: List of perturbation targets in the dataset.
+        - representation_type: Type of representation for the perturbation targets (e.g., 'Baseline', 'DepMap', etc.).
+        - min_counts: Minimum counts for filtering perturbations.
+        - gene_embs: Dictionary of gene embeddings (optional)
+    """
     def __init__(self,
-                dataset='replogle_rpe1',
-                leave_out_test_set_id=None,
+                dataset_name='replogle_rpe1_hvg',
+                adata_path=None,
                 leave_out_test_set=None,
-                perturb_targets=None, 
                 representation_type=None, representation_type_2=None, representation_type_3=None,
+                gene_embs=None, gene_embs_2=None, gene_embs_3=None,
                 min_counts=32,
-                random_seed=None,
-                use_hvg='False',
-                gene_embs = None):
+                random_seed=12):
         super(Dataset, self).__init__()
         
         self.seed = random_seed
-        
-        # first read in the csv file of dataset
-        scdata_file = pd.read_csv('./data/scdata_file_path.csv')
-        adata_path = scdata_file[scdata_file['dataset'] == dataset][scdata_file['use_hvg'] == (use_hvg == 'True')]['file_path'].values[0]
-        dataset_name = dataset
-        if use_hvg == 'True':
-            dataset_name = dataset_name + '_hvg'
 
-        # if no gene_embs are provided, read in the ptb embedding dictionaries
+        # Load perturbation embeddings if not provided
+        embedding_file_df = pd.read_csv('./data/perturb_embed_file_path.csv')
         if gene_embs is None:
-            # let's read in the ptb embedding dictionaries here and do the filtering
-            embedding_file_df = pd.read_csv('./data/perturb_embed_file_path.csv')
-            embedding_file_subset = embedding_file_df[embedding_file_df['representation_type']==representation_type]
-
-            # Read in correct embedding file path
-            if representation_type == 'Baseline':
-                embed_file = None
-            elif embedding_file_subset.shape[0] == 1:
-                embed_file = embedding_file_subset['file_path'].values[0]
-            elif embedding_file_subset.shape[0] > 1:
-                embed_file = embedding_file_subset[embedding_file_subset['dataset']==dataset][embedding_file_subset['use_hvg'] == (use_hvg == 'True')]['file_path'].values[0]
-            if embed_file is not None:
-                with open(embed_file, 'rb') as file:
-                    gene_embs = pickle.load(file)
-                    print("Loading perturbation target embeddings from", embed_file)
-            else:
-                gene_embs = None
-            
-            # Read in the second perturbation target embeddings
-            if representation_type_2 is not None:
-                embedding_file_subset_2 = embedding_file_df[embedding_file_df['representation_type']==representation_type_2]
-                if embedding_file_subset_2.shape[0] == 1:
-                    embed_file_2 = embedding_file_subset_2['file_path'].values[0]
-                elif embedding_file_subset_2.shape[0] > 1:
-                    embed_file_2 = embedding_file_subset_2[embedding_file_subset_2['dataset']==dataset][embedding_file_subset_2['use_hvg'] == (use_hvg == 'True')]['file_path'].values[0]
-                if embed_file_2 is not None:
-                    with open(embed_file_2, 'rb') as file:
-                        gene_embs_2 = pickle.load(file)
-                        print("Loading perturbation target embeddings from", embed_file_2)
-            else:
-                gene_embs_2 = None
-
-            # Read in the third perturbation target embeddings
-            if representation_type_3 is not None:
-                embedding_file_subset_3 = embedding_file_df[embedding_file_df['representation_type']==representation_type_3]
-                if embedding_file_subset_3.shape[0] == 1:
-                    embed_file_3 = embedding_file_subset_3['file_path'].values[0]
-                elif embedding_file_subset_3.shape[0] > 1:
-                    embed_file_3 = embedding_file_subset_3[embedding_file_subset_3['dataset']==dataset][embedding_file_subset_3['use_hvg'] == (use_hvg == 'True')]['file_path'].values[0]
-                if embed_file_3 is not None:
-                    with open(embed_file_3, 'rb') as file:
-                        gene_embs_3 = pickle.load(file)
-                        print("Loading perturbation target embeddings from", embed_file_3)
-            else:
-                gene_embs_3 = None
+            gene_embs = self.load_embedding(embedding_file_df, dataset_name, representation_type)
+        if gene_embs_2 is None and representation_type_2 is not None:    
+            gene_embs_2 = self.load_embedding(embedding_file_df, dataset_name, representation_type_2)
+        if gene_embs_3 is None and representation_type_3 is not None:
+            gene_embs_3 = self.load_embedding(embedding_file_df, dataset_name, representation_type_3)
         
         # Get the list of perturbation targets leave out for testing
-        if leave_out_test_set is None:
-            split_path = './data/' + dataset_name + '_splits.csv'
-            split_df = pd.read_csv(split_path)
-            print('loading split data from: ', split_path)
-            print('leave_out_test_set_id: ', leave_out_test_set_id)
-            if leave_out_test_set_id == 'all_train':
-                ptb_leave_out_list = ''
-            else:
-                ptb_leave_out_list = split_df[split_df['test_set_id'] == leave_out_test_set_id]['test_set'].apply(lambda x: x.split(',')).values[0]
-        else:
-            ptb_leave_out_list = leave_out_test_set
+        ptb_leave_out_list = leave_out_test_set
         
         # Filter out the perturbation targets with counts < min_counts
         adata = sc.read_h5ad(adata_path)
@@ -139,11 +91,8 @@ class SCDataset(Dataset):
         self.ptb_leave_out_list = ptb_leave_out_list
         
         # Get list of perturbation targets
-        if perturb_targets is None:
-            ptb_targets = list(set(adata.obs['gene']))
-            ptb_targets.remove('non-targeting')
-        else:
-            ptb_targets = perturb_targets
+        ptb_targets = list(set(adata.obs['gene']))
+        ptb_targets.remove('non-targeting')
         self.ptb_targets = ptb_targets
         print("There are", len(ptb_targets), "perturbation targets.")
         
@@ -188,6 +137,23 @@ class SCDataset(Dataset):
             ]
         del adata
     
+    def load_embedding(self, embedding_file_df, dataset_name, representation_type):
+        """Loads embedding file based on dataset and representation type."""
+        if representation_type is None:
+            return None
+        
+        embedding_file_subset = embedding_file_df[embedding_file_df['representation_type'] == representation_type]
+        if embedding_file_subset.shape[0] == 1:
+            embed_file = embedding_file_subset['file_path'].values[0]
+        elif embedding_file_subset.shape[0] > 1:
+            embed_file = embedding_file_subset[(embedding_file_subset['dataset_name'] == dataset_name)]['file_path'].values[0]
+        else:
+            return None
+        
+        with open(embed_file, 'rb') as file:
+            print(f'Loading perturbation target embeddings from {embed_file}')
+            return pickle.load(file)
+
     def __getitem__(self, item):
         # A control sample
         x = torch.from_numpy(self.rand_ctrl_samples[item].flatten()).double()
@@ -221,8 +187,7 @@ class SCDataset(Dataset):
         return self.ptb_samples.shape[0]
 
 
-def map_ptb_features(all_ptb_targets, ptb_ids, representation_type, gene_embs):
-    
+def map_ptb_features(all_ptb_targets, ptb_ids, representation_type, gene_embs):    
     if representation_type == 'Baseline' and gene_embs is None:
         'This function maps the perturbation targets to binary vectors.'
         # get all single ptb_targets
