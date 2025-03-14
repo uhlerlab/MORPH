@@ -18,16 +18,12 @@ pip install -e .
 
 ## Experiments
 
-After downloading the dataset, the CellOT model can be trained via the scripts/train.py script. For example, we can train CellOT on 4i data to predict perturbation effects of Cisplatin:
-
-Run on a synthetic instance, e.g.:
+After pre-processing the single-cell dataset (see example in `demo/data_tutorial.ipynb`) and the gene embedding dictionaries that incorporate prior biological knowledge (see example in `demo/gene_embedding_tutorial.ipynb`), you can specify the path and hyperparameters in `run.sh` and run MORPH and automatically evaluate the results upon completion:
 ```
-python run.py --nnodes 5 --noise_level 1 --DAG_type path --std --a_size 2 --a_target 3 4 --acquisition greedy
+./run.sh
 ```
 
-Source code folder: `./optint/`
-
-More examples given in: `./optint/notebook/test_multigraphs.ipynb`
+Source code folder: `./morph/`
 
 ## Figures in the paper
 
