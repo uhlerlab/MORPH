@@ -1,18 +1,15 @@
 import torch
 import numpy as np
 import pickle
-from collections import Counter
 import json
 from tqdm import tqdm
 import random
-import os
-import pandas as pd
 
 from torch.utils.data import DataLoader, Subset
 from dataset import SCDataset
 from utils import SCDATA_sampler
 
-def evaluate_single_model(modality, model, savedir, device, use_index=False, infer_data = None):
+def evaluate_single_model(model, savedir, device, use_index=True, infer_data=None):
 
     # load configs
     with open(f'{savedir}/config.json') as f:
@@ -44,16 +41,15 @@ def evaluate_single_model(modality, model, savedir, device, use_index=False, inf
         else:
             gene_embs = None
         
-        dataset = SCDataset(modality = modality, dataset = config['dataset'], 
-                            leave_out_test_set_id = config['leave_out_test_set_id'],
-                            perturb_targets=None, 
+        dataset = SCDataset(dataset_name = config['dataset_name'], 
+                            adata_path = config['adata_path'],
+                            leave_out_test_set = config['leave_out_test_set'],
                             representation_type=config['label'], 
                             representation_type_2 = config['label_2'],
                             representation_type_3=config['label_3'],
-                            use_hvg=config['use_hvg'],
-                            random_seed=config['seed'],
+                            gene_embs=gene_embs,
                             min_counts=config['batch_size'],
-                            gene_embs=gene_embs)
+                            random_seed=config['seed'])
         
         # Check that the saved ptb_leave_out_list is the same as the one in the dataset
         assert(set(ptb_leave_out_list) == set(dataset.ptb_leave_out_list)), 'Error: ptb_leave_out_list does not match the ptb targets in the dataset'

@@ -3,13 +3,9 @@ import pandas as pd
 import random
 import pickle
 import torch
-import sys
-import matplotlib.pyplot as plt
-from matplotlib import cm,colors
 from warnings import filterwarnings
 from argparse import ArgumentParser
 from tqdm import tqdm
-import seaborn as sns
 import json
 import os
 import glob
@@ -23,30 +19,20 @@ from scipy.stats import pearsonr
 from sklearn.metrics import r2_score
 
 from inference import *
-from utils import SCDATA_sampler, MMD_loss, compute_scalar_mmd
-from dataset import SCDataset
-from torch.utils.data import DataLoader
+from utils import MMD_loss
 
 ### Set up experiment environments ------------------------------------------------
 def main():
     parser = ArgumentParser(description="Run evaluations")
     parser.add_argument('--modality', type=str, default='rna', help="Modality to use (rna or ops)")
     parser.add_argument('--dataset_name', type=str, default='replogle_rpe1_hvg', help="Name of the dataset to evaluate on")
+    parser.add_argument('--adata_path', type=str, default='', help="Path to the AnnData file")
     parser.add_argument('--test_set_name', type=str, default='random_fold_1', help="Test set id")
+    parser.add_argument('--test_set_list', type=list, default=[''], help="List of perturbations to evaluate on")
     parser.add_argument('--representation_type', type=str, default='DepMap_GeneEffect', help="Type of representation to use")
-    parser.add_argument('--reconstruction_loss', type=str, help="Reconstruction loss to use (mmd or mse)")
-    parser.add_argument('--null_label', type=str, help="Null label (zeros, gaussian, or gaussian_normalized)")
+	parser.add_argument('--null_label', type=str, help="Null label (zeros, gaussian, or gaussian_normalized)")
     parser.add_argument('--model_type', type=str, default='MORPH', help="Type of model to use")
-    parser.add_argument('--model_name', type=str, default='best_model_2.pt', help="Name of the model")
-    parser.add_argument('--min_counts', type=int, default=32, help="Minimum counts for genes to be included in test set")
-    parser.add_argument('--total_epochs', type=int, default=100, help="Total number of epochs")
-    parser.add_argument('--tolerance_epochs', type=int, help="Tolerance epochs")
-    parser.add_argument('--mxAlpha', type=float, help="Maximum alpha")
-    parser.add_argument('--latdim_ctrl', type=int, help="Latent dimension for control")
-    parser.add_argument('--latdim_ptb', type=int, help="Latent dimension for perturbation")
-    parser.add_argument('--geneset_num', type=int, help="Number of gene sets")
-    parser.add_argument('--validation_set_ratio', type=float, help="Validation set ratio")
-    parser.add_argument('--validation_ood_ratio', type=float, help="Validation OOD ratio")
+    parser.add_argument('--model_name', type=str, default='best_model.pt', help="Name of the model")
     parser.add_argument('--random_seed', type=int, default=12, help="Random seed")
     parser.add_argument('--device', type=str, default='cuda:4', help="Device to run on")
     parser.add_argument('--run_name', type=str, default='', help="Name of the run (if not specified, will use the most recent run)")
@@ -56,6 +42,7 @@ def main():
     print('Modality:', modality)
     dataset_name = args.dataset_name
     print('Evaluating on', dataset_name)
+    adata_path = args.adata_path
     if modality == 'rna':
         dataset = dataset_name.replace('_hvg', '')
     elif modality == 'ops':
@@ -80,33 +67,14 @@ def main():
     print('Model type:', model_type)
     model_name = args.model_name
     print('Model name:', model_name)
-    total_epochs = args.total_epochs
-    print('Total epochs:', total_epochs)
     random_seed = args.random_seed
-    tolerance_epochs = args.tolerance_epochs
-    print('Tolerance epochs:', tolerance_epochs)
-    mxAlpha = args.mxAlpha
-    print('Maximum alpha:', mxAlpha)
-    latdim_ctrl = args.latdim_ctrl
-    latdim_ptb = args.latdim_ptb
-    geneset_num = args.geneset_num
-    validation_set_ratio = args.validation_set_ratio
-    validation_ood_ratio = args.validation_ood_ratio
     print('Random seed:', random_seed)
-    min_counts = args.min_counts
-    print('Minimum counts:', min_counts)
     device = args.device
     print('Device:', device)
     run_name = args.run_name
     print('Run name:', run_name)
 
     # Load single-cell data -----------------------------------
-    if modality == 'rna':
-        scdata_file = pd.read_csv('./data/scdata_file_path.csv')
-        adata_path = scdata_file[scdata_file['dataset'] == dataset][scdata_file['use_hvg'] == (use_hvg == 'True')]['file_path'].values[0]
-    elif modality == 'ops':
-        scdata_file = pd.read_csv('./data/ops_file_path.csv')
-        adata_path = scdata_file[scdata_file['dataset'] == dataset][scdata_file['test_set_id'] == test_set_name]['file_path'].values[0]
     adata = sc.read(adata_path)
     print('Loaded adata from ', adata_path)
 
@@ -117,15 +85,7 @@ def main():
      
     # Load model ----------------------------------------------
     # Define the base directory
-    savedir = "./result"
-    if modality == 'rna':
-        savedir = os.path.join(savedir, modality, dataset_name, 
-                               'latdim_ctrl_'+str(latdim_ctrl)+'_latdim_ptb_'+str(latdim_ptb)+'_geneset_num_'+str(geneset_num),
-                               test_set_name, 'recon_loss_'+str(reconstruction_loss), 'null_label_'+str(null_label), 'epochs_'+str(total_epochs), 'tolerance_epochs_'+str(tolerance_epochs), 'mxAlpha_'+str(mxAlpha), 'val_'+str(validation_set_ratio)+'_ood_'+str(validation_ood_ratio), 'random_seed_'+str(random_seed))
-    elif modality == 'ops':
-        savedir = os.path.join(savedir, modality, 
-                               'latdim_ctrl_'+str(latdim_ctrl)+'_latdim_ptb_'+str(latdim_ptb)+'_geneset_num_'+str(geneset_num),
-                               test_set_name, dataset_name, 'recon_loss_'+str(reconstruction_loss), 'null_label_'+str(null_label), 'epochs_'+str(total_epochs), 'tolerance_epochs_'+str(tolerance_epochs), 'mxAlpha_'+str(mxAlpha), 'val_'+str(validation_set_ratio)+'_ood_'+str(validation_ood_ratio), 'random_seed_'+str(random_seed))
+    savedir = os.path.join("./result", modality, dataset_name, test_set_name)
 
     if run_name == '':
         print('No run name specified. Using the most recent run.')
@@ -156,15 +116,13 @@ def main():
         config = json.load(f)
     assert modality == config['modality']
     batch_size = config['batch_size']
+    min_counts = batch_size
     assert model_type == config['model']
-    assert min_counts == batch_size
     label_1 = config['label']
     assert label_1 == representation_type
     label_2 = config['label_2']
     label_3 = config['label_3']
-    lr = config['lr']
     mmd_sigma = config['MMD_sigma']
-    assert total_epochs == config['epochs']
     assert random_seed == config['seed']
     np.random.seed(random_seed)
     torch.manual_seed(random_seed)
@@ -172,7 +130,7 @@ def main():
     print('Random seed:', random_seed)
     
     # Load data ----------------------------------------------
-    result_dic = evaluate_single_model(modality, model, 
+    result_dic = evaluate_single_model(model, 
                                        most_recent_run_dir, 
                                        device, 
                                        use_index=True, 
@@ -209,8 +167,7 @@ def main():
     elif modality == 'ops':
         mmd_loss =  MMD_loss(fix_sigma=mmd_sigma, kernel_num=10)
         print(f'Using MMD with fixed sigma = {mmd_sigma}')
-    gammas = np.logspace(1, -3, num=10)
-    
+
     from sklearn.metrics import mean_squared_error as mse
     ### Calculate R^2 and RMSE using the top 50 marker genes
     np.random.seed(random_seed)
@@ -435,7 +392,6 @@ def main():
         'fraction': fraction_morph_mean if modality == 'rna' else None,
         'fraction_whole': fraction_morph_whole_mean if modality == 'rna' else None,
         'model_path': most_recent_run_dir,
-        'epochs': total_epochs,
         'note': 'top 50 marker genes' if modality == 'rna' else 'ops data'
     }])
     

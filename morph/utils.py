@@ -1,15 +1,9 @@
 import random
 import numpy as np
-import pandas as pd
-import scanpy as sc
-import pickle
-from sklearn.metrics.pairwise import rbf_kernel
-
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Subset
 from torch.utils.data.sampler import Sampler
-
 
 from dataset import SCDataset
 
@@ -49,37 +43,27 @@ class MMD_loss(nn.Module):
         loss = torch.mean(XX + YY - XY -YX)
         return loss
 
-def get_data(opts, perturb_targets=None):
-    modality=opts.modality 
+def get_data(opts):
+    dataset_name=opts.dataset_name
+    adata_path=opts.adata_path
     batch_size=opts.batch_size
-    leave_out_test_set_id = opts.leave_out_test_set_id
+    leave_out_test_set=opts.leave_out_test_set
     validation_set_ratio=opts.validation_set_ratio
     validation_ood_ratio=opts.validation_ood_ratio
     representation_type=opts.label
     representation_type_2 = opts.label_2
     representation_type_3 = opts.label_3
     min_counts=opts.batch_size
-    dataset=opts.dataset
-    use_hvg=opts.use_hvg
     random_seed=opts.seed
     
-    if modality == 'rna':
-        if dataset not in ['norman_k562', 'replogle_rpe1', 'replogle_rpe1_min_16', 
-                        'replogle_k562_essential', 'replogle_k562_gwps', 
-                        'transfer_cell_line_rpe1', 
-                        'transfer_cell_line_rpe1_train', 'transfer_cell_line_k562_essential_test',
-                        'transfer_cell_line_rpe1_ctrl_train',
-                        'transfer_cell_line_k562', 'dixit_bmdc_3hr',
-                        'replogle_k562_gwps_balanced_random_fold_1', 'replogle_k562_gwps_balanced_random_fold_1_2',
-                        'replogle_k562_gwps_balanced_random_fold_1_cluster_1', 'replogle_k562_gwps_balanced_random_fold_1_cluster_2',
-                        'replogle_k562_gwps_balanced_ctrl']:
-            raise ValueError('Dataset not supported yet')
-    
     # First get dataset and indices
-    dataset = SCDataset(modality = modality, dataset = dataset, leave_out_test_set_id = leave_out_test_set_id, perturb_targets=perturb_targets, 
+    dataset = SCDataset(dataset_name=dataset_name,
+                        adata_path=adata_path,
+                        leave_out_test_set = leave_out_test_set, 
                         representation_type=representation_type, representation_type_2=representation_type_2,
-                        representation_type_3=representation_type_3, min_counts=min_counts,
-                        use_hvg=use_hvg, random_seed=random_seed)
+                        representation_type_3=representation_type_3,
+                        min_counts=min_counts,
+                        random_seed=random_seed)
     ptb_leave_out_list = dataset.ptb_leave_out_list
     print('Generated dataset')
     print('Getting train and validation indices')

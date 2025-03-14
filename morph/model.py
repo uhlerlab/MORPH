@@ -1,8 +1,6 @@
 import torch
 import torch.nn as nn
-from torch.nn import functional as F
 import numpy as np
-import pickle
 
 class MORPH(nn.Module):
     def __init__(self, dim, c_dim, 
@@ -134,17 +132,15 @@ class MORPH(nn.Module):
         h = self.leakyrelu(self.d1(u))
         return h
 
-    def forward(self, x, c_1, c_2, gene_set_mtrx = None, num_interv = 1, return_alphas = False, return_latents = False):
-        assert num_interv in [0,1,2], "support single-node or double-node interventions only"
+    def forward(self, x, c_1, c_2, gene_set_mtrx = None, return_alphas = False, return_latents = False):
 
         # encode perturbation label
         z_ptb_1 = self.c_encode(c_1)
         z_ptb_2 = None
-        if num_interv == 2:
-            c_2_test = c_2.detach().cpu().numpy()
-            if not np.all(np.isnan(c_2_test)):
-                z_ptb_2 = self.c_encode(c_2)
-                del c_2_test
+        c_2_test = c_2.detach().cpu().numpy()
+        if not np.all(np.isnan(c_2_test)):
+            z_ptb_2 = self.c_encode(c_2)
+            del c_2_test
         if z_ptb_2 is not None:
             z_ptb_ft = z_ptb_1 + z_ptb_2
         else:
