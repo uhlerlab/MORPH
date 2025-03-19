@@ -1,0 +1,18 @@
+{
+    "num_interv": 2,
+    "batch_size": 32,
+    "mode": "train",
+    "lr": 0.0001,
+    "grad_clip": true,
+    "mxAlpha": 2,
+    "mxBeta": 1,
+    "MMD_sigma": 1500,
+    "kernel_num": 10,
+    "matched_IO": false,
+    "latdim_ctrl": 50,
+    "latdim_ptb": 50,
+    "geneset_num": 50,
+    "geneset_dim": 50,
+    "hidden_dim": 128,
+    "seed": 12
+}
