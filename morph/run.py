@@ -7,6 +7,7 @@ import pickle
 
 import torch
 import numpy as np
+import pandas as pd
 import random
 
 from train import train_validate
@@ -22,9 +23,11 @@ def main(args):
 		lr = 1e-4,
 		grad_clip = True,
 		kernel_num = 10,
+		hidden_dim = 128,
 		matched_IO = False
 	)
 	
+	opts.base_dir = args.base_dir
 	opts.seed = args.random_seed
 	torch.manual_seed(opts.seed)
 	np.random.seed(opts.seed)
@@ -60,13 +63,23 @@ def main(args):
 	# Load data
 	opts.modality = args.modality
 	opts.dataset_name = args.dataset_name
-	opts.adata_path = args.adata_path
 	opts.leave_out_test_set_id = args.leave_out_test_set_id
-	opts.leave_out_test_set = args.leave_out_test_set
 	opts.label = args.label
 	opts.label_2 = args.label_2
 	opts.label_3 = args.label_3
 	opts.null_label = args.null_label
+
+	# get adata_path
+	scdata_file = pd.read_csv(f'{opts.base_dir}/data/scdata_file_path.csv')
+	opts.adata_path = scdata_file[scdata_file['dataset'] == opts.dataset_name]['file_path'].values[0]
+
+	# get leave_out_test_set
+	split_path = f'{opts.base_dir}/data/{opts.dataset_name}_splits.csv'
+	split_df = pd.read_csv(split_path)
+	print('loading split data from: ', split_path)
+	print('leave_out_test_set_id: ', opts.leave_out_test_set_id)
+	opts.leave_out_test_set = split_df[split_df['test_set_id'] == opts.leave_out_test_set_id]['test_set'].apply(lambda x: x.split(',')).values[0]
+
 	dataloader, train_idx, dataloader_val, val_idx, dataloader_infer, infer_idx, \
 		dim, cdim, cdim_2, cdim_3, ptb_targets, ptb_vector_dict, \
 			 ptb_leave_out_list = get_data(opts=opts)
@@ -104,26 +117,23 @@ def main(args):
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='parse args')
-	parser.add_argument('-s', '--savedir', type=str, default='./result/', help='directory to save the results')
 	parser.add_argument('--random_seed', type=int, default=12, help='random seed')
 	parser.add_argument('--modality', type=str, default='rna', help='modality to use: rna, ops')
 	parser.add_argument('--dataset_name', type=str, default='norman_k562_hvg', help='dataset to use (e.g., norman_k562_hvg, replogle_rpe1_hvg, replogle_k562_essential_hvg, ...)')
-	parser.add_argument('--adata_path', type=str, default='./data/path_to_data', help='path to the adata file')
 	parser.add_argument('--leave_out_test_set_id', type=str, default='random_fold_1', help='test id to identify list of perturbations to leave out for testing')
-	parser.add_argument('--leave_out_test_set', type=list, default=None, help='list of perturbations to leave out for testing')
 	parser.add_argument('--device', type=str, default="cuda:6", help='device to run the training')
 	parser.add_argument('--model', type=str, default='MORPH', help='model to run the training')
 	parser.add_argument('--label', type=str, default='DepMap_GeneEffect', help='Gene embeddings for incorporating prior knowledge (e.g., Baseline (ont-hot vector) or DepMap_GeneEffect or ...)')
-	parser.add_argument('--label_2', type=str, default='GenePT_v1', help='Only applicable when you want to run mixture of expert model')
-	parser.add_argument('--label_3', type=str, default='STRING', help='Only applicable when you want to run mixture of expert model')
+	parser.add_argument('--label_2', type=str, default=None, help='Only applicable when you want to run mixture of expert model')
+	parser.add_argument('--label_3', type=str, default=None, help='Only applicable when you want to run mixture of expert model')
 	parser.add_argument('--null_label', type=str, default='zeros', help='null representation to use for the control (options: zeros, gaussian, gaussian_normalized)')
 	parser.add_argument('--epochs', type=int, default=100, help='number of epochs to run the training')
 	parser.add_argument('--tolerance_epochs', type=int, default=20, help='number of epochs to tolerate before early stopping')
 	parser.add_argument('--batch_size', type=int, default=32, help='batch size')
 	parser.add_argument('--MMD_sigma', type=int, default=1500, help='sigma for MMD loss')
-	parser.add_argument('--mxAlpha', type=float, default=10, help='alpha for MMD loss')
+	parser.add_argument('--mxAlpha', type=float, default=2, help='alpha for MMD loss')
 	parser.add_argument('--mxBeta', type=float, default=2, help='beta for KL loss')
-	parser.add_argument('--Gamma1', type=float, default=0, help='gamma for reconstruction loss (MMD)')
+	parser.add_argument('--Gamma1', type=float, default=1, help='gamma for reconstruction loss (MMD)')
 	parser.add_argument('--Gamma2', type=float, default=0, help='gamma for reconstruction loss (MSE)')
 	parser.add_argument('--validation_set_ratio', type=float, default=0.1, help='ratio of validation set (*total_training_candidates)')
 	parser.add_argument('--validation_ood_ratio', type=float, default=0.15, help='ratio of ood validation set (*validation_set), default: 0.15')
@@ -132,8 +142,9 @@ if __name__ == '__main__':
 	parser.add_argument('--geneset_num', type=int, default=50, help='number of genesets to use in the model')
 	parser.add_argument('--geneset_dim', type=int, default=50, help='dimension of geneset embeddings')
 	args = parser.parse_args()
-	
-	args.savedir = (f"{args.savedir}{args.modality}/{args.dataset_name}/"
+
+	args.base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+	args.savedir = (f"{args.base_dir}/result/{args.modality}/{args.dataset_name}/"
 				    f"{str.lower(args.leave_out_test_set_id)}/{args.label}_{args.model}_run{int(time.time())}")
 	print('Will save results to: ', args.savedir)
 

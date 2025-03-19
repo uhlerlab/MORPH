@@ -57,7 +57,8 @@ def get_data(opts):
     random_seed=opts.seed
     
     # First get dataset and indices
-    dataset = SCDataset(dataset_name=dataset_name,
+    dataset = SCDataset(base_dir=opts.base_dir,
+                        dataset_name=dataset_name,
                         adata_path=adata_path,
                         leave_out_test_set = leave_out_test_set, 
                         representation_type=representation_type, representation_type_2=representation_type_2,
@@ -105,7 +106,6 @@ def get_data(opts):
     # Testing dataloader
     dataset_val = Subset(dataset, val_idx)
     ptb_name = dataset.ptb_names[val_idx]
-    # assert(ptb_name.isin(train_ptb_name).all()), "Targets in validation test are also in training set" not true any more if we have ood gene test 
     dataloader_val = DataLoader(
         dataset_val,
         batch_sampler=SCDATA_sampler(dataset_val, batch_size, ptb_name),

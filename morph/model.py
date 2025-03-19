@@ -27,10 +27,10 @@ class MORPH(nn.Module):
         if opts.null_label == 'zeros':
             self.null_label = torch.zeros(1, self.c_dim).double().to(self.device)
         elif opts.null_label == 'gaussian':
-            null_folder = f'./data/gene_ptb_emb/Null/dim_{self.c_dim}/null_vector.npy'
+            null_folder = f'{opts.base_dir}/data/gene_ptb_emb/Null/dim_{self.c_dim}/null_vector.npy'
             self.null_label = torch.tensor(np.load(null_folder)).double().to(self.device)
         elif opts.null_label == 'gaussian_normalized':
-            null_folder = f'./data/gene_ptb_emb/Null/dim_{self.c_dim}/normalized_vector.npy'
+            null_folder = f'{opts.base_dir}/data/gene_ptb_emb/Null/dim_{self.c_dim}/normalized_vector.npy'
             self.null_label = torch.tensor(np.load(null_folder)).double().to(self.device)
 
         # Gene-expression encoder

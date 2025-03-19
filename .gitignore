@@ -3,3 +3,6 @@ __pycache__/
 wandb/
 *.h5ad
 result/
+data/norman_k562_hvg_splits.csv
+data/replogle_k562_essential_hvg_splits.csv
+data/replogle_k562_gwps_hvg_splits.csv

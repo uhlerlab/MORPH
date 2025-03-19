@@ -1,0 +1,2 @@
+representation_type,dataset_name,file_path,note
+DepMap_GeneEffect,,/home/che/perturb-project/data/gene_ptb_emb/DepMap/depmap_crispr_gene_effect_name_correct.pkl,/home/che/perturb-project/data/DepMap/process_embedding_gene_effect.ipynb

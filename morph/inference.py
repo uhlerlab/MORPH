@@ -31,8 +31,6 @@ def evaluate_single_model(model, savedir, device, use_index=True, infer_data=Non
             train_idx = split_idx['train_idx']
             infer_idx = split_idx['infer_idx']
         
-        dataset = config['dataset']
-        
         if config['label'] == 'Baseline':
             print('Loading one-hot vectors for ptb targets generated during training...')
             with open(f'{savedir}/ptb_vector_dict.pkl', 'rb') as f:
@@ -41,7 +39,8 @@ def evaluate_single_model(model, savedir, device, use_index=True, infer_data=Non
         else:
             gene_embs = None
         
-        dataset = SCDataset(dataset_name = config['dataset_name'], 
+        dataset = SCDataset(base_dir=config["base_dir"],
+                            dataset_name = config['dataset_name'], 
                             adata_path = config['adata_path'],
                             leave_out_test_set = config['leave_out_test_set'],
                             representation_type=config['label'], 
@@ -133,11 +132,11 @@ def evaluate_single_model(model, savedir, device, use_index=True, infer_data=Non
         with torch.no_grad():
             if 'moe' in config['model']:
                 if '3expert' in config['model']:
-                    y_hat, _, _ , _ = model(x, c_1, c_2, c_1_2, c_2_2, c_1_3, c_2_3, num_interv=2)
+                    y_hat, _, _ , _ = model(x, c_1, c_2, c_1_2, c_2_2, c_1_3, c_2_3)
                 else:
-                    y_hat, _, _ , _ = model(x, c_1, c_2, c_1_2, c_2_2, num_interv=2)
+                    y_hat, _, _ , _ = model(x, c_1, c_2, c_1_2, c_2_2)
             else:
-                y_hat, _, _ , _ = model(x, c_1, c_2, num_interv=2)
+                y_hat, _, _ , _ = model(x, c_1, c_2)
         
         gt_x.append(x.cpu().numpy())
         gt_y.append(y.numpy())

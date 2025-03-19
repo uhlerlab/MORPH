@@ -26,11 +26,9 @@ def main():
     parser = ArgumentParser(description="Run evaluations")
     parser.add_argument('--modality', type=str, default='rna', help="Modality to use (rna or ops)")
     parser.add_argument('--dataset_name', type=str, default='replogle_rpe1_hvg', help="Name of the dataset to evaluate on")
-    parser.add_argument('--adata_path', type=str, default='', help="Path to the AnnData file")
-    parser.add_argument('--test_set_name', type=str, default='random_fold_1', help="Test set id")
-    parser.add_argument('--test_set_list', type=list, default=[''], help="List of perturbations to evaluate on")
-    parser.add_argument('--representation_type', type=str, default='DepMap_GeneEffect', help="Type of representation to use")
-	parser.add_argument('--null_label', type=str, help="Null label (zeros, gaussian, or gaussian_normalized)")
+    parser.add_argument('--leave_out_test_set_id', type=str, default='random_fold_1', help="Test set id")
+    parser.add_argument('--label', type=str, default='DepMap_GeneEffect', help="Type of representation to use")
+    parser.add_argument('--null_label', type=str, default="zeros", help="Null label (zeros, gaussian, or gaussian_normalized)")
     parser.add_argument('--model_type', type=str, default='MORPH', help="Type of model to use")
     parser.add_argument('--model_name', type=str, default='best_model.pt', help="Name of the model")
     parser.add_argument('--random_seed', type=int, default=12, help="Random seed")
@@ -38,33 +36,17 @@ def main():
     parser.add_argument('--run_name', type=str, default='', help="Name of the run (if not specified, will use the most recent run)")
     args = parser.parse_args()
     
+    args.base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     modality = args.modality
     print('Modality:', modality)
     dataset_name = args.dataset_name
     print('Evaluating on', dataset_name)
-    adata_path = args.adata_path
-    if modality == 'rna':
-        dataset = dataset_name.replace('_hvg', '')
-    elif modality == 'ops':
-        dataset = dataset_name
-    else:
-        raise ValueError('Invalid modality!')
-    print('Dataset:', dataset)
-    if dataset_name.endswith('_hvg'):
-        use_hvg = 'True'
-    else:
-        use_hvg = 'False'
-    print('Use HVG:', use_hvg)
-    test_set_name = args.test_set_name
-    print('Test set:', test_set_name)
-    representation_type = args.representation_type
+    leave_out_test_set_id = args.leave_out_test_set_id
+    print('Test set:', leave_out_test_set_id)
+    representation_type = args.label
     print('Representation type:', representation_type)
-    reconstruction_loss = args.reconstruction_loss
-    print('Reconstruction loss:', reconstruction_loss)
     null_label = args.null_label
     print('Null label:', null_label)
-    model_type = args.model_type
-    print('Model type:', model_type)
     model_name = args.model_name
     print('Model name:', model_name)
     random_seed = args.random_seed
@@ -75,6 +57,8 @@ def main():
     print('Run name:', run_name)
 
     # Load single-cell data -----------------------------------
+    scdata_file = pd.read_csv(f'{args.base_dir}/data/scdata_file_path.csv')
+    adata_path = scdata_file[scdata_file['dataset'] == args.dataset_name]['file_path'].values[0]
     adata = sc.read(adata_path)
     print('Loaded adata from ', adata_path)
 
@@ -84,13 +68,12 @@ def main():
         sc.tl.rank_genes_groups(adata, groupby='gene', reference='non-targeting', n_genes=50, use_raw=False, rankby_abs=True)
      
     # Load model ----------------------------------------------
-    # Define the base directory
-    savedir = os.path.join("./result", modality, dataset_name, test_set_name)
+    savedir = os.path.join(f"{args.base_dir}/result", modality, dataset_name, leave_out_test_set_id)
 
     if run_name == '':
         print('No run name specified. Using the most recent run.')
         # Construct the pattern to match the saved directories
-        pattern = os.path.join(savedir, f'{representation_type}_{model_type}_run*')
+        pattern = os.path.join(savedir, f'{representation_type}_{args.model_type}_run*')
         run_dirs = glob.glob(pattern)
         
         # Sort directories by creation time (most recent last)
@@ -103,7 +86,7 @@ def main():
             print("No run directories found.")
     else:
         assert representation_type in run_name, 'The representation type is not in the run name!'
-        assert model_type in run_name, 'The model type is not in the run name!'
+        assert args.model_type in run_name, 'The model type is not in the run name!'
         most_recent_run_dir = os.path.join(savedir, run_name)
         print(f"Using run directory: {most_recent_run_dir}")
     
@@ -117,7 +100,7 @@ def main():
     assert modality == config['modality']
     batch_size = config['batch_size']
     min_counts = batch_size
-    assert model_type == config['model']
+    assert args.model_type == config['model']
     label_1 = config['label']
     assert label_1 == representation_type
     label_2 = config['label_2']
@@ -137,7 +120,7 @@ def main():
                                        infer_data=None)
     
     C_y = result_dic['gt_C_y'].flatten().tolist()
-    print('test set:', test_set_name)
+    print('test set:', leave_out_test_set_id)
     print("There are", len(set(C_y)), "unique perturbations in the test set.")
     print("These testing perturbations are:", set(C_y))
     assert all(x is not None for x in C_y), 'Some cells are not in the embedding dictionary!'
@@ -260,7 +243,7 @@ def main():
     assert(len(mmd_loss_morph) == len(leave_out_list)), 'The number of perturbations is not the same!'
     assert(set(mmd_loss_morph.keys()) == set(leave_out_list)), 'The perturbations are not the same!'
 
-    print('Test set:', test_set_name)
+    print('Test set:', leave_out_test_set_id)
     print(set(C_y))
     print('Size of test set: ', len(set(C_y)))
     print('Save directory:', savedir)
@@ -371,8 +354,8 @@ def main():
     new_row_df = pd.DataFrame([{
         'random_seed': random_seed,
         'data': dataset_name,
-        'test_set_id': test_set_name,
-        'model_type': model_type,
+        'test_set_id': args.leave_out_test_set_id,
+        'model_type': args.model_type,
         'model_name': model_name,
         'label_1': label_1,
         'label_2': label_2,

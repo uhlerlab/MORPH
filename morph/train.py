@@ -57,11 +57,7 @@ def train_validate(
     ):
 
     if log:
-        if opts.modality == 'rna':
-            dataset_name = opts.dataset+'_hvg' if opts.use_hvg == 'True' else opts.dataset
-            project_name = f'morph_{dataset_name}_{opts.leave_out_test_set_id}'
-        elif opts.modality == 'ops':
-            project_name = f'morph_{opts.leave_out_test_set_id}'
+        project_name = f'morph_{opts.dataset_name}_{opts.leave_out_test_set_id}'
         wandb.init(project=project_name, name=savedir.split('/')[-1])  #name should be the run time after fixing the os.makedirs bug
     
     if model == 'MORPH':
@@ -93,7 +89,7 @@ def train_validate(
         beta_schedule[2:] = torch.linspace(0,opts.mxBeta,opts.epochs-2)
     
     # if 'gwps' in opts.dataset:
-    if len(dataloader) > 1e5:
+    if opts.batch_size*len(dataloader) > 1e6:
         # for large datasets, kick in the alpha sooner
         alpha_schedule = torch.zeros(opts.epochs) # weight on the MMD
         alpha_schedule[:] = opts.mxAlpha
@@ -160,15 +156,15 @@ def train_validate(
 
             if 'moe' in model:
                 if '3expert' in model:
-                    y_hat, x_recon, z_mu, z_logvar = mvae(x,c_1, c_2, c_1_2, c_2_2, c_1_3, c_2_3, num_interv=opts.num_interv)
+                    y_hat, x_recon, z_mu, z_logvar = mvae(x,c_1, c_2, c_1_2, c_2_2, c_1_3, c_2_3)
                 else:
-                    y_hat, x_recon, z_mu, z_logvar = mvae(x,c_1, c_2, c_1_2, c_2_2, num_interv=opts.num_interv)
+                    y_hat, x_recon, z_mu, z_logvar = mvae(x,c_1, c_2, c_1_2, c_2_2)
             else:
-                y_hat, x_recon, z_mu, z_logvar = mvae(x,c_1, c_2, num_interv=opts.num_interv)
+                y_hat, x_recon, z_mu, z_logvar = mvae(x,c_1, c_2)
 
-            mmd_loss, recon_loss, kl_loss = loss_function(y_hat, y, x_recon, x, z_mu, z_logvar, 
-                                                          opts.MMD_sigma, opts.kernel_num, 
-                                                          opts.Gamma1, opts.Gamma2)
+            mmd_loss, recon_loss, kl_loss = loss_function(y_hat=y_hat, y=y, x_recon=x_recon, x=x, mu=z_mu, logvar=z_logvar, 
+                                                          MMD_sigma=opts.MMD_sigma, kernel_num=opts.kernel_num, 
+                                                          gamma1=opts.Gamma1, gamma2=opts.Gamma2)
             loss = alpha_schedule[epoch] * mmd_loss + recon_loss + beta_schedule[epoch]*kl_loss
 
             if(recon_loss.isnan()):
@@ -267,15 +263,15 @@ def train_validate(
 
                 if 'moe' in model:
                     if '3expert' in model:
-                        y_hat, x_recon, z_mu, z_logvar = mvae(x, c_1, c_2, c_1_2, c_2_2, c_1_3, c_2_3, num_interv=opts.num_interv)
+                        y_hat, x_recon, z_mu, z_logvar = mvae(x, c_1, c_2, c_1_2, c_2_2, c_1_3, c_2_3)
                     else:
-                        y_hat, x_recon, z_mu, z_logvar = mvae(x, c_1, c_2, c_1_2, c_2_2, num_interv=opts.num_interv)
+                        y_hat, x_recon, z_mu, z_logvar = mvae(x, c_1, c_2, c_1_2, c_2_2)
                 else:
-                    y_hat, x_recon, z_mu, z_logvar = mvae(x, c_1, c_2, num_interv=opts.num_interv)
+                    y_hat, x_recon, z_mu, z_logvar = mvae(x, c_1, c_2)
                 
-                mmd_loss, recon_loss, kl_loss = loss_function(y_hat, y, x_recon, x, z_mu, z_logvar,
-                                                              opts.MMD_sigma, opts.kernel_num, 
-                                                              opts.Gamma1, opts.Gamma2)
+                mmd_loss, recon_loss, kl_loss = loss_function(y_hat=y_hat, y=y, x_recon=x_recon, x=x, mu=z_mu, logvar=z_logvar,
+                                                              MMD_sigma=opts.MMD_sigma, kernel_num=opts.kernel_num, 
+                                                              gamma1=opts.Gamma1, gamma2=opts.Gamma2)
                 if z_logvar is not None:
                     val_loss = mmd_loss + recon_loss + kl_loss
                 else:

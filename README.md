@@ -18,7 +18,12 @@ pip install -e .
 
 ## Experiments
 
-After pre-processing the single-cell dataset (see example in `demo/data_tutorial.ipynb`) and the gene embedding dictionaries that incorporate prior biological knowledge (see example in `demo/gene_embedding_tutorial.ipynb`), you can specify the path and hyperparameters in `run.sh` and run MORPH and automatically evaluate the results upon completion:
+After 
+1. pre-processing the single-cell dataset (see example in `demo/data_tutorial.ipynb`),
+2. specifying the train-test split (see example in `demo/split_tutorial.ipynb`), 
+3. generating the gene embedding dictionaries that incorporate prior biological knowledge (see example in `demo/gene_embedding_tutorial.ipynb`),
+
+you can specify the hyperparameters in `run.sh` and run MORPH and automatically evaluate the results upon completion:
 ```
 ./run.sh
 ```
@@ -29,7 +34,5 @@ Source code folder: `./morph/`
 
 Illustraive figures: made using powerpoint
 
-Pointers for nonillustrative figures:
-
-- `./optint/notebook/test_ow.ipynb`: Fig. 3, Supplementary Fig. 2
+Nonillustrative figures: see `./analysis`
 

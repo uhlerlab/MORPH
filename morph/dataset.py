@@ -20,6 +20,7 @@ class SCDataset(Dataset):
         - gene_embs: Dictionary of gene embeddings (optional)
     """
     def __init__(self,
+                base_dir='./',
                 dataset_name='replogle_rpe1_hvg',
                 adata_path=None,
                 leave_out_test_set=None,
@@ -32,7 +33,7 @@ class SCDataset(Dataset):
         self.seed = random_seed
 
         # Load perturbation embeddings if not provided
-        embedding_file_df = pd.read_csv('./data/perturb_embed_file_path.csv')
+        embedding_file_df = pd.read_csv(f'{base_dir}/data/perturb_embed_file_path.csv')
         if gene_embs is None:
             gene_embs = self.load_embedding(embedding_file_df, dataset_name, representation_type)
         if gene_embs_2 is None and representation_type_2 is not None:    
