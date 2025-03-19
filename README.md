@@ -34,5 +34,12 @@ Source code folder: `./morph/`
 
 Illustraive figures: made using powerpoint
 
-Nonillustrative figures: see `./analysis`
+Pointers for nonillustrative figures:
+
+- `./analysis/figures/single_gene_perturbation`: Fig. 2, Supplementary Fig. 2-4
+- `./analysis/figures/cell_line_transfer`: Fig. 3, Supplementary Fig. 5
+- `./analysis/figures/double_gene`: Fig. 3, Supplementary Fig. 6
+- `./analysis/figures/active_learning`: Fig. 4, Supplementary Fig. 7
+- `./analysis/figures/grn`: Fig. 4, Supplementary Fig. 8
+- `./analysis/figures/ops`: Fig. 5, Supplementary Fig. 9
 
