@@ -475,6 +475,8 @@ def learn_loss_select(dataset, train_list_current, opts, gene_latent_df, round, 
         pool_set = np.stack(pool_set_df['gene_emb'].values)
     elif opts.use_prior == 'False' and opts.prior_only == 'False':
         pool_set = np.stack(pool_set_df['gene_emb_ft'].values)
+    else:
+        raise NotImplementedError('Parameter combination not supported for learning loss')
     pool_set = torch.tensor(pool_set).to(opts.device)
 
     if opts.method == 'learn_loss_mse':
