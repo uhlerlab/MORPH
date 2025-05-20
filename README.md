@@ -36,10 +36,10 @@ Illustraive figures: made using powerpoint
 
 Pointers for nonillustrative figures:
 
-- `./analysis/single_gene_perturbation`: Fig. 2, Supplementary Fig. 2-4
-- `./analysis/cell_line_transfer`: Fig. 3, Supplementary Fig. 5
-- `./analysis/double_gene`: Fig. 3, Supplementary Fig. 6
-- `./analysis/active_learning`: Fig. 4, Supplementary Fig. 7
-- `./analysis/grn`: Fig. 4, Supplementary Fig. 8
-- `./analysis/ops`: Fig. 5, Supplementary Fig. 9
+- `./analysis/single_gene_perturbation`: Fig. 2, Supplemental Fig. 2-5
+- `./analysis/cell_line_transfer`: Fig. 3
+- `./analysis/double_gene`: Fig. 3, Supplemental Fig. 6
+- `./analysis/active_learning`: Fig. 4, Supplemental Fig. 7
+- `./analysis/grn`: Fig. 5, Supplemental Fig. 8
+- `./analysis/ops`: Fig. 6, Supplemental Fig. 9
 
