@@ -3,11 +3,12 @@
 # Running models -------------------------------------------------------------
 random_seeds=(12)
 modality="rna" # "rna" or "ops"
+model="MORPH_moe_3expert" # "MORPH" or "MORPH_no_residual1" or "MORPH_moe_3expert"
 dataset_name="norman_k562_hvg"
 leave_out_test_set_ids=("random_split_1_2")
 representation_types=("DepMap_GeneEffect")
-label_2=None
-label_3=None
+label_2="GenePT_v1" #"GenePT_v1", None
+label_3="STRING" #"STRING", None
 null_label='zeros' # 'gaussian_normalized' or 'gaussian' or 'zeros'
 epochs=100
 tolerance_epochs=20 #set to 20 by default
@@ -20,7 +21,7 @@ latdim_ctrl=50
 latdim_ptb=50
 geneset_num=50
 geneset_dim=50
-device="cuda:4"
+device="cuda:5"
 
 model_name_list=("best_model.pt" "best_model_val.pt")
 
@@ -37,6 +38,7 @@ do
                           --dataset_name "$dataset_name" \
                           --leave_out_test_set_id "$test_set_name" \
                           --device "$device" \
+                          --model "$model" \
                           --label "$representation_type" \
                           --label_2 "$label_2" \
                           --label_3 "$label_3" \
@@ -61,6 +63,7 @@ do
                                    --leave_out_test_set_id "$test_set_name" \
                                    --label "$representation_type" \
                                    --null_label "$null_label" \
+                                   --model_type "$model" \
                                    --model_name "$model_name" \
                                    --random_seed "$random_seed" \
                                    --device "$device"

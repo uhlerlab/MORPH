@@ -3,6 +3,7 @@
 # Running models -------------------------------------------------------------
 random_seeds=(12)
 modality="rna" # "rna" or "ops"
+model="MORPH" # "MORPH" or "MORPH_no_residual1" or "MORPH_moe_3expert"
 dataset_name="norman_k562_hvg"
 leave_out_test_set_ids=("random_split_1_2")
 representation_types=("DepMap_GeneEffect")
@@ -29,6 +30,7 @@ do
                                    --leave_out_test_set_id "$test_set_name" \
                                    --label "$representation_type" \
                                    --null_label "$null_label" \
+                                   --model_type "$model" \
                                    --model_name "$model_name" \
                                    --random_seed "$random_seed" \
                                    --device "$device"

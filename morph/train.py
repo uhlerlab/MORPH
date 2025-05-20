@@ -57,7 +57,7 @@ def train_validate(
     ):
 
     if log:
-        project_name = f'morph_{opts.dataset_name}_{opts.leave_out_test_set_id}'
+        project_name = f'{model}_{opts.dataset_name}_{opts.leave_out_test_set_id}'
         wandb.init(project=project_name, name=savedir.split('/')[-1])  #name should be the run time after fixing the os.makedirs bug
     
     if model == 'MORPH':
@@ -67,6 +67,22 @@ def train_validate(
             opts = opts,
             device = device
         )
+    elif model == 'MORPH_no_residual1':
+        mvae = MORPH_no_residual1(
+            dim = opts.dim,
+            c_dim = opts.cdim,
+            opts = opts,
+            device = device
+        )
+    elif model == "MORPH_moe_3expert":
+        mvae = MORPH_moe_3expert(
+            dim = opts.dim,
+            c_dim = opts.cdim,
+            opts = opts,
+            device = device
+        )
+    else:
+        raise ValueError(f"Unknown model type: {model}")
     
     # move model to device
     mvae.double()
