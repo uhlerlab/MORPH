@@ -145,37 +145,41 @@ def main():
 
     ### Calculate losses -----------------------------------
     if modality == 'rna':
-        mmd_loss =  MMD_loss(fix_sigma=200, kernel_num=10)
-        print('Using MMD with fixed sigma = 200')
+        mmd_loss_de_fn =  MMD_loss(fix_sigma=200, kernel_num=10)
+        mmd_loss_whole_fn = MMD_loss(fix_sigma=1500, kernel_num=10)
+        print('Using MMD with fixed sigma = 200 for DE genes and 1500 for whole genome')
     elif modality == 'ops':
-        mmd_loss =  MMD_loss(fix_sigma=mmd_sigma, kernel_num=10)
+        mmd_loss_de_fn=MMD_loss(fix_sigma=mmd_sigma, kernel_num=10)
+        mmd_loss_whole_fn=MMD_loss(fix_sigma=mmd_sigma, kernel_num=10)
         print(f'Using MMD with fixed sigma = {mmd_sigma}')
 
     from sklearn.metrics import mean_squared_error as mse
     ### Calculate R^2 and RMSE using the top 50 marker genes
     np.random.seed(random_seed)
     torch.manual_seed(random_seed)
-    mmd_loss_morph = {}
-    rmse_loss_morph = {}
-    mse_loss_morph = {}
-    r2_morph = {}
-    l2_morph = {}
-    pearsonr_morph = {}
 
+    # Evaluations on DE genes for each perturbation ------------
+    mmd_loss_de = {}
+    rmse_loss_de = {}
+    mse_loss_de = {}
+    r2_de = {}
+    l2_de = {}
+    pearsonr_de = {}
     # change over control
-    rmse_change_morph = {}
-    pearsonr_change_morph = {}
-    fraction_morph = {}
+    rmse_change_de = {}
+    pearsonr_change_de = {}
+    fraction_de = {}
 
-    rmse_loss_morph_whole = {}
-    mse_loss_morph_whole = {}
-    r2_morph_whole = {}
-    pearsonr_morph_whole = {}
-
+    # Evaluations on whole genomes for each perturbation ------------
+    mmd_loss_whole = {}
+    rmse_loss_whole = {}
+    mse_loss_whole = {}
+    r2_whole = {}
+    pearsonr_whole = {}
     # change over control
-    rmse_change_morph_whole = {}
-    pearsonr_change_morph_whole = {}
-    fraction_morph_whole = {}
+    rmse_change_whole = {}
+    pearsonr_change_whole = {}
+    fraction_whole = {}
 
     for pert in tqdm(set(C_y)):
         pert_name = pert
@@ -197,51 +201,61 @@ def main():
             y_pred_deg = y_pred[:, degs]
             y_ctrl_deg = y_ctrl[:, degs]
 
-            rmse_loss_morph[pert_name] = np.sqrt(mse(y_true_deg.mean(0), y_pred_deg.mean(0)))
-            mse_loss_morph[pert_name] = mse(y_true_deg.mean(0), y_pred_deg.mean(0))
-            r2_morph[pert_name] = max(r2_score(y_true_deg.mean(0), y_pred_deg.mean(0)),0)
-            l2_morph[pert_name] = np.linalg.norm(y_true_deg.mean(0) - y_pred_deg.mean(0))
-            pearsonr_morph[pert_name] = pearsonr(y_true_deg.mean(0), y_pred_deg.mean(0))[0]
+            # Evaluations on DE genes for each perturbation ------------
+            rmse_loss_de[pert_name] = np.sqrt(mse(y_true_deg.mean(0), y_pred_deg.mean(0)))
+            mse_loss_de[pert_name] = mse(y_true_deg.mean(0), y_pred_deg.mean(0))
+            r2_de[pert_name] = max(r2_score(y_true_deg.mean(0), y_pred_deg.mean(0)),0)
+            l2_de[pert_name] = np.linalg.norm(y_true_deg.mean(0) - y_pred_deg.mean(0))
+            pearsonr_de[pert_name] = pearsonr(y_true_deg.mean(0), y_pred_deg.mean(0))[0]
             # change over control
-            rmse_change_morph[pert_name] = np.sqrt(mse(y_true_deg.mean(0) - y_ctrl_deg.mean(0), y_pred_deg.mean(0) - y_ctrl_deg.mean(0)))
-            pearsonr_change_morph[pert_name] = pearsonr(y_true_deg.mean(0) - y_ctrl_deg.mean(0), y_pred_deg.mean(0) - y_ctrl_deg.mean(0))[0]
-            # percentage of de genes with same direction (change from control)
-            fraction_morph[pert_name] = np.sum(np.sign(y_true_deg.mean(0) - y_ctrl_deg.mean(0)) == np.sign(y_pred_deg.mean(0) - y_ctrl_deg.mean(0)))/n_top_deg
+            rmse_change_de[pert_name] = np.sqrt(mse(y_true_deg.mean(0) - y_ctrl_deg.mean(0), y_pred_deg.mean(0) - y_ctrl_deg.mean(0)))
+            pearsonr_change_de[pert_name] = pearsonr(y_true_deg.mean(0) - y_ctrl_deg.mean(0), y_pred_deg.mean(0) - y_ctrl_deg.mean(0))[0]
+            fraction_de[pert_name] = np.sum(np.sign(y_true_deg.mean(0) - y_ctrl_deg.mean(0)) == np.sign(y_pred_deg.mean(0) - y_ctrl_deg.mean(0)))/n_top_deg
 
-            rmse_loss_morph_whole[pert_name] = np.sqrt(mse(y_true.mean(0), y_pred.mean(0)))
-            mse_loss_morph_whole[pert_name] = mse(y_true.mean(0), y_pred.mean(0))
-            r2_morph_whole[pert_name] = max(r2_score(y_true.mean(0), y_pred.mean(0)),0)
-            pearsonr_morph_whole[pert_name] = pearsonr(y_true.mean(0), y_pred.mean(0))[0]
+            # Evaluations on whole genomes for each perturbation ------------
+            rmse_loss_whole[pert_name] = np.sqrt(mse(y_true.mean(0), y_pred.mean(0)))
+            mse_loss_whole[pert_name] = mse(y_true.mean(0), y_pred.mean(0))
+            r2_whole[pert_name] = max(r2_score(y_true.mean(0), y_pred.mean(0)),0)
+            pearsonr_whole[pert_name] = pearsonr(y_true.mean(0), y_pred.mean(0))[0]
             # change over control
-            rmse_change_morph_whole[pert_name] = np.sqrt(mse(y_true.mean(0) - y_ctrl.mean(0), y_pred.mean(0) - y_ctrl.mean(0)))
-            pearsonr_change_morph_whole[pert_name] = pearsonr(y_true.mean(0) - y_ctrl.mean(0), y_pred.mean(0) - y_ctrl.mean(0))[0]
-            fraction_morph_whole[pert_name] = np.sum(np.sign(y_true.mean(0) - y_ctrl.mean(0)) == np.sign(y_pred.mean(0) - y_ctrl.mean(0)))/y_true.shape[1]
-
-            y_pred_mmd = y_pred_deg
-            y_true_mmd = y_true_deg
+            rmse_change_whole[pert_name] = np.sqrt(mse(y_true.mean(0) - y_ctrl.mean(0), y_pred.mean(0) - y_ctrl.mean(0)))
+            pearsonr_change_whole[pert_name] = pearsonr(y_true.mean(0) - y_ctrl.mean(0), y_pred.mean(0) - y_ctrl.mean(0))[0]
+            fraction_whole[pert_name] = np.sum(np.sign(y_true.mean(0) - y_ctrl.mean(0)) == np.sign(y_pred.mean(0) - y_ctrl.mean(0)))/y_true.shape[1]
+            
+            y_pred_mmd_deg = y_pred_deg
+            y_true_mmd_deg = y_true_deg
+            y_pred_mmd_whole = y_pred
+            y_true_mmd_whole = y_true
 
         elif modality == 'ops':
-            y_true_mmd = y_true
-            y_pred_mmd = y_pred
+            # no DEG for image data
+            y_pred_mmd_deg = y_pred
+            y_true_mmd_deg = y_true
+            y_pred_mmd_whole = y_true
+            y_pred_mmd_whole = y_pred
 
-        # Empirical MMD is divided by sample size, so we should calculate MMD by batches and then take the average
-        min_sample_size = min(y_pred_mmd.shape[0], y_true_mmd.shape[0])
-        # print('min_sample_size:', min_sample_size)
-        y_pred_mmd = y_pred_mmd[np.random.choice(y_pred_mmd.shape[0], min_sample_size, replace=False),:]
-        y_true_mmd = y_true_mmd[np.random.choice(y_true_mmd.shape[0], min_sample_size, replace=False),:]
-        
+        # Empirical MMD is divided by sample size, so we calculate MMD by batches and then take the average
+        min_sample_size = min(y_pred_mmd_deg.shape[0], y_true_mmd_deg.shape[0])
+        y_pred_mmd_deg = y_pred_mmd_deg[np.random.choice(y_pred_mmd_deg.shape[0], min_sample_size, replace=False),:]
+        y_true_mmd_deg = y_true_mmd_deg[np.random.choice(y_true_mmd_deg.shape[0], min_sample_size, replace=False),:]
+        y_pred_mmd_whole = y_pred_mmd_whole[np.random.choice(y_pred_mmd_whole.shape[0], min_sample_size, replace=False),:]
+        y_true_mmd_whole = y_true_mmd_whole[np.random.choice(y_true_mmd_whole.shape[0], min_sample_size, replace=False),:]
+       
         num_batches = min_sample_size // min_counts
         for i in range(num_batches):
-            mmd_loss_temp = mmd_loss(torch.tensor(y_pred_mmd[i*min_counts:(i+1)*min_counts]), torch.tensor(y_true_mmd[i*min_counts:(i+1)*min_counts])).item()
+            mmd_loss_de_temp = mmd_loss_de_fn(torch.tensor(y_pred_mmd_deg[i*min_counts:(i+1)*min_counts]), torch.tensor(y_true_mmd_deg[i*min_counts:(i+1)*min_counts])).item()
+            mmd_loss_whole_temp = mmd_loss_whole_fn(torch.tensor(y_pred_mmd_whole[i*min_counts:(i+1)*min_counts]), torch.tensor(y_true_mmd_whole[i*min_counts:(i+1)*min_counts])).item()
 
-            if pert_name not in mmd_loss_morph.keys():
-                mmd_loss_morph[pert_name] = [mmd_loss_temp]
+            if pert_name not in mmd_loss_de.keys():
+                mmd_loss_de[pert_name] = [mmd_loss_de_temp]
+                mmd_loss_whole[pert_name] = [mmd_loss_whole_temp]
             else:
-                mmd_loss_morph[pert_name].append(mmd_loss_temp)
+                mmd_loss_de[pert_name].append(mmd_loss_de_temp)
+                mmd_loss_whole[pert_name].append(mmd_loss_whole_temp)
 
     leave_out_list = config['ptb_leave_out_list']
-    assert(len(mmd_loss_morph) == len(leave_out_list)), 'The number of perturbations is not the same!'
-    assert(set(mmd_loss_morph.keys()) == set(leave_out_list)), 'The perturbations are not the same!'
+    assert(len(mmd_loss_de) == len(leave_out_list)), 'The number of perturbations is not the same!'
+    assert(set(mmd_loss_de.keys()) == set(leave_out_list)), 'The perturbations are not the same!'
 
     print('Test set:', leave_out_test_set_id)
     print(set(C_y))
@@ -255,95 +269,102 @@ def main():
         print('Using top 50 marker genes')
 
     print('MORPH, mmd')
-    mmd_loss_summary = {}
-    for k in mmd_loss_morph.keys():
-        mmd_loss_summary[k] = (np.average(mmd_loss_morph[k]), np.std(mmd_loss_morph[k]))
+    mmd_loss_de_summary = {}
+    for k in mmd_loss_de.keys():
+        mmd_loss_de_summary[k] = (np.average(mmd_loss_de[k]), np.std(mmd_loss_de[k]))
+    mmd_loss_whole_summary = {}
+    for k in mmd_loss_whole.keys():
+        mmd_loss_whole_summary[k] = (np.average(mmd_loss_whole[k]), np.std(mmd_loss_whole[k]))
 
     # format to 3 decimal places
-    mmd_morph = np.mean([i[0] for i in mmd_loss_summary.values()])
-    print('mean', '%.5f'%(mmd_morph))
-    print('ste', np.std([i[0] for i in mmd_loss_summary.values()])/np.sqrt(len(mmd_loss_summary.keys())))
+    mmd_de = np.mean([i[0] for i in mmd_loss_de_summary.values()])
+    print('mean', '%.5f'%(mmd_de))
+    print('ste', np.std([i[0] for i in mmd_loss_de_summary.values()])/np.sqrt(len(mmd_loss_de_summary.keys())))
+
+    mmd_whole = np.mean([i[0] for i in mmd_loss_whole_summary.values()])
+    print('mean', '%.5f'%(mmd_whole))
+    print('ste', np.std([i[0] for i in mmd_loss_whole_summary.values()])/np.sqrt(len(mmd_loss_whole_summary.keys())))
 
     if modality == 'rna':
         print('morph, rmse')
-        rmse_morph = np.mean([i for i in rmse_loss_morph.values()])
-        print('mean', '%.5f'%(rmse_morph))
-        print('ste', np.std([i for i in rmse_loss_morph.values()])/np.sqrt(len(rmse_loss_morph.keys())))
+        rmse_de = np.mean([i for i in rmse_loss_de.values()])
+        print('mean', '%.5f'%(rmse_de))
+        print('ste', np.std([i for i in rmse_loss_de.values()])/np.sqrt(len(rmse_loss_de.keys())))
 
         print('morph, rmse (whole genome)')
-        rmse_morph_whole = np.mean([i for i in rmse_loss_morph_whole.values()])
-        print('mean', '%.5f'%(rmse_morph_whole))
-        print('ste', np.std([i for i in rmse_loss_morph_whole.values()])/np.sqrt(len(rmse_loss_morph_whole.keys())))
+        rmse_whole = np.mean([i for i in rmse_loss_whole.values()])
+        print('mean', '%.5f'%(rmse_whole))
+        print('ste', np.std([i for i in rmse_loss_whole.values()])/np.sqrt(len(rmse_loss_whole.keys())))
 
         print('morph, mse')
-        mse_morph = np.mean([i for i in mse_loss_morph.values()])
-        print('mean', '%.5f'%(mse_morph))
-        print('ste', np.std([i for i in mse_loss_morph.values()])/np.sqrt(len(mse_loss_morph.keys())))
+        mse_de = np.mean([i for i in mse_loss_de.values()])
+        print('mean', '%.5f'%(mse_de))
+        print('ste', np.std([i for i in mse_loss_de.values()])/np.sqrt(len(mse_loss_de.keys())))
 
         print('morph, mse (whole genome)')
-        mse_morph_whole = np.mean([i for i in mse_loss_morph_whole.values()])
-        print('mean', '%.5f'%(mse_morph_whole))
-        print('ste', np.std([i for i in mse_loss_morph_whole.values()])/np.sqrt(len(mse_loss_morph_whole.keys())))
+        mse_whole = np.mean([i for i in mse_loss_whole.values()])
+        print('mean', '%.5f'%(mse_whole))
+        print('ste', np.std([i for i in mse_loss_whole.values()])/np.sqrt(len(mse_loss_whole.keys())))
 
         print('morph, r2')
-        morph_r2 = np.mean([i for i in r2_morph.values()])
-        print('mean', '%.5f'%(morph_r2))
-        print('ste', np.std([i for i in r2_morph.values()])/np.sqrt(len(r2_morph.keys())))
+        r2_de_mean = np.mean([i for i in r2_de.values()])
+        print('mean', '%.5f'%(r2_de_mean))
+        print('ste', np.std([i for i in r2_de.values()])/np.sqrt(len(r2_de.keys())))
 
         print('morph, r2 (whole genome)')
-        morph_r2_whole = np.mean([i for i in r2_morph_whole.values()])
-        print('mean', '%.5f'%(morph_r2_whole))
-        print('ste', np.std([i for i in r2_morph_whole.values()])/np.sqrt(len(r2_morph_whole.keys())))
+        r2_whole_mean = np.mean([i for i in r2_whole.values()])
+        print('mean', '%.5f'%(r2_whole_mean))
+        print('ste', np.std([i for i in r2_whole.values()])/np.sqrt(len(r2_whole.keys())))
 
         print('morph, l2')
-        morph_l2 = np.mean([i for i in l2_morph.values()])
-        print('mean', '%.5f'%(morph_l2))
+        l2_de_mean = np.mean([i for i in l2_de.values()])
+        print('mean', '%.5f'%(l2_de_mean))
 
         print('morph, pearsonr')
-        pearsonr_morph_mean = np.nanmean([i for i in pearsonr_morph.values()]) #some ptb has nan pearsonr as their true degs might be all 0s
-        print('mean', '%.5f'%(pearsonr_morph_mean))
+        pearsonr_de_mean = np.nanmean([i for i in pearsonr_de.values()]) #some ptb has nan pearsonr as their true degs might be all 0s
+        print('mean', '%.5f'%(pearsonr_de_mean))
 
         print('morph, pearsonr (whole genome)')
-        pearsonr_morph_whole_mean = np.mean([i for i in pearsonr_morph_whole.values()])
-        print('mean', '%.5f'%(pearsonr_morph_whole_mean))
+        pearsonr_whole_mean = np.mean([i for i in pearsonr_whole.values()])
+        print('mean', '%.5f'%(pearsonr_whole_mean))
 
         # change over control checks
         print('morph, rmse change')
-        rmse_change_morph_mean = np.mean([i for i in rmse_change_morph.values()])
-        print('mean', '%.5f'%(rmse_change_morph_mean))
+        rmse_change_de_mean = np.mean([i for i in rmse_change_de.values()])
+        print('mean', '%.5f'%(rmse_change_de_mean))
 
         print('morph, pearsonr change')
-        pearsonr_change_morph_mean = np.mean([i for i in pearsonr_change_morph.values()])
-        print('mean', '%.5f'%(pearsonr_change_morph_mean))
+        pearsonr_change_de_mean = np.mean([i for i in pearsonr_change_de.values()])
+        print('mean', '%.5f'%(pearsonr_change_de_mean))
 
         print('morph, fraction of DE genes with same direction')
-        fraction_morph_mean = np.mean([i for i in fraction_morph.values()])
-        print('mean', '%.5f'%(fraction_morph_mean))
+        fraction_de_mean = np.mean([i for i in fraction_de.values()])
+        print('mean', '%.5f'%(fraction_de_mean))
 
         print('morph, rmse change (whole genome)')
-        rmse_change_morph_whole_mean = np.mean([i for i in rmse_change_morph_whole.values()])
-        print('mean', '%.5f'%(rmse_change_morph_whole_mean))
+        rmse_change_whole_mean = np.mean([i for i in rmse_change_whole.values()])
+        print('mean', '%.5f'%(rmse_change_whole_mean))
 
         print('morph, pearsonr change (whole genome)')
-        pearsonr_change_morph_whole_mean = np.mean([i for i in pearsonr_change_morph_whole.values()])
-        print('mean', '%.5f'%(pearsonr_change_morph_whole_mean))
+        pearsonr_change_whole_mean = np.mean([i for i in pearsonr_change_whole.values()])
+        print('mean', '%.5f'%(pearsonr_change_whole_mean))
 
         print('morph, fraction of DE genes with same direction (whole genome)')
-        fraction_morph_whole_mean = np.mean([i for i in fraction_morph_whole.values()])
-        print('mean', '%.5f'%(fraction_morph_whole_mean))
+        fraction_whole_mean = np.mean([i for i in fraction_whole.values()])
+        print('mean', '%.5f'%(fraction_whole_mean))
 
     ### Save results -----------------------------------
     df = pd.DataFrame()
-    df['pert'] = mmd_loss_summary.keys()
-    df['mmd'] = [i[0] for i in mmd_loss_summary.values()]
+    df['pert'] = mmd_loss_de_summary.keys()
+    df['mmd_de'] = [i[0] for i in mmd_loss_de_summary.values()]
     if modality == 'rna':
-        df['rmse'] = [i for i in rmse_loss_morph.values()]
-        df['mse'] = [i for i in mse_loss_morph.values()]
-        df['r2'] = [i for i in r2_morph.values()]
-        df['pearsonr'] = [i for i in pearsonr_morph.values()]
-        df['rmse_change'] = [i for i in rmse_change_morph.values()]
-        df['pearsonr_change'] = [i for i in pearsonr_change_morph.values()]
-        df['fraction'] = [i for i in fraction_morph.values()] 
+        df['rmse_de'] = [i for i in rmse_loss_de.values()]
+        df['mse_de'] = [i for i in mse_loss_de.values()]
+        df['r2_de'] = [i for i in r2_de.values()]
+        df['pearsonr_de'] = [i for i in pearsonr_de.values()]
+        df['rmse_change_de'] = [i for i in rmse_change_de.values()]
+        df['pearsonr_change_de'] = [i for i in pearsonr_change_de.values()]
+        df['fraction_de'] = [i for i in fraction_de.values()] 
 
     # save this df into csv file
     csv_output_path = most_recent_run_dir+ '/' + model_name.replace('.pt', '') + '_evaluations.csv'
@@ -361,19 +382,23 @@ def main():
         'label_2': label_2,
         'label_3': label_3,
         'mmd_sigma': mmd_sigma if modality == 'ops' else None,
-        'mmd': mmd_morph,
-        'r2': morph_r2 if modality == 'rna' else None,
-        'l2': morph_l2 if modality == 'rna' else None,
-        'mse': mse_morph if modality == 'rna' else None,
-        'rmse': rmse_morph if modality == 'rna' else None,
-        'pearsonr': pearsonr_morph_mean if modality == 'rna' else None,
-        'pearsonr_whole': pearsonr_morph_whole_mean if modality == 'rna' else None,
-        'rmse_change': rmse_change_morph_mean if modality == 'rna' else None,
-        'rmse_change_whole': rmse_change_morph_whole_mean if modality == 'rna' else None,
-        'pearsonr_change': pearsonr_change_morph_mean if modality == 'rna' else None,
-        'pearsonr_change_whole': pearsonr_change_morph_whole_mean if modality == 'rna' else None,
-        'fraction': fraction_morph_mean if modality == 'rna' else None,
-        'fraction_whole': fraction_morph_whole_mean if modality == 'rna' else None,
+        'mmd_de': mmd_de,
+        'mmd_whole': mmd_whole,
+        'r2_de': r2_de_mean if modality == 'rna' else None,
+        'r2_whole': r2_whole_mean if modality == 'rna' else None,
+        'l2_de': l2_de_mean if modality == 'rna' else None,
+        'mse_de': mse_de if modality == 'rna' else None,
+        'mse_whole': mse_whole if modality == 'rna' else None,
+        'rmse_de': rmse_de if modality == 'rna' else None,
+        'rmse_whole': rmse_whole if modality == 'rna' else None,
+        'pearsonr_de': pearsonr_de_mean if modality == 'rna' else None,
+        'pearsonr_whole': pearsonr_whole_mean if modality == 'rna' else None,
+        'rmse_change': rmse_change_de_mean if modality == 'rna' else None,
+        'rmse_change_whole': rmse_change_whole_mean if modality == 'rna' else None,
+        'pearsonr_change': pearsonr_change_de_mean if modality == 'rna' else None,
+        'pearsonr_change_whole': pearsonr_change_whole_mean if modality == 'rna' else None,
+        'fraction': fraction_de_mean if modality == 'rna' else None,
+        'fraction_whole': fraction_whole_mean if modality == 'rna' else None,
         'model_path': most_recent_run_dir,
         'note': 'top 50 marker genes' if modality == 'rna' else 'ops data'
     }])
