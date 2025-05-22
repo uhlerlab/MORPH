@@ -30,16 +30,16 @@ you can specify the hyperparameters in `run.sh` and run MORPH and automatically 
 
 Source code folder: `./morph/`
 
-## Figures in the paper
+## Figures/Analyses in the paper
 
 Illustraive figures: made using powerpoint
 
 Pointers for nonillustrative figures:
 
 - `./analysis/single_gene_perturbation`: Fig. 2, Supplemental Fig. 2-5
-- `./analysis/cell_line_transfer`: Fig. 3
+- `./analysis/cell_line_transfer`: Fig. 3, and codes to perform transfer learning
 - `./analysis/double_gene`: Fig. 3, Supplemental Fig. 6
-- `./analysis/active_learning`: Fig. 4, Supplemental Fig. 7
+- `./analysis/active_learning`: Fig. 4, Supplemental Fig. 7, and codes to perform AL experiments
 - `./analysis/grn`: Fig. 5, Supplemental Fig. 8
 - `./analysis/ops`: Fig. 6, Supplemental Fig. 9
 
