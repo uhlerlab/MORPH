@@ -93,7 +93,7 @@ Make sure you are in the root directory (i.e., `MORPH/`) and follow the two step
 
 1. Create a conda environment using `environment.yaml` (all dependencies are included; whole process takes about 5 min):
 ```
-conda env create -f environment.yml
+conda env create -f environment.yml -n morph
 ```
 2. install the current package in editable mode inside the conda environment:
 ```
