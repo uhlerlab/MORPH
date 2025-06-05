@@ -4,8 +4,8 @@
 random_seeds=(12)
 modality="rna" # "rna" or "ops"
 model="MORPH" # choose model type: ("MOE" or "MOE_no_residual1" or "MOE_moe_3expert"), if use moe_3expert, please specify the other two priors in label_2 and label_3
-dataset_name="replogle_k562_gwps_hvg"
-leave_out_test_set_ids=("random_fold_1")
+dataset_name="norman_k562_hvg"
+leave_out_test_set_ids=("random_split_1_2")
 representation_types=("DepMap_GeneEffect")
 label_2="None" #"GenePT_v1", None
 label_3="None" #"STRING", None
