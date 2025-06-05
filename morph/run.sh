@@ -3,12 +3,12 @@
 # Running models -------------------------------------------------------------
 random_seeds=(12)
 modality="rna" # "rna" or "ops"
-model="MORPH_moe_3expert" # "MORPH" or "MORPH_no_residual1" or "MORPH_moe_3expert"
-dataset_name="norman_k562_hvg"
-leave_out_test_set_ids=("random_split_1_2")
+model="MORPH" # choose model type: ("MOE" or "MOE_no_residual1" or "MOE_moe_3expert"), if use moe_3expert, please specify the other two priors in label_2 and label_3
+dataset_name="replogle_k562_gwps_hvg"
+leave_out_test_set_ids=("random_fold_1")
 representation_types=("DepMap_GeneEffect")
-label_2="GenePT_v1" #"GenePT_v1", None
-label_3="STRING" #"STRING", None
+label_2="None" #"GenePT_v1", None
+label_3="None" #"STRING", None
 null_label='zeros' # 'gaussian_normalized' or 'gaussian' or 'zeros'
 epochs=100
 tolerance_epochs=20 #set to 20 by default
@@ -21,7 +21,7 @@ latdim_ctrl=50
 latdim_ptb=50
 geneset_num=50
 geneset_dim=50
-device="cuda:5"
+device="cuda:0"
 
 model_name_list=("best_model.pt" "best_model_val.pt")
 
