@@ -30,7 +30,8 @@ Then, activate the Conda environment you set up earlier by running:
 ```
 conda activate morph
 ```
-Make sure to run the model within this conda environment, which contains all the necessary packages.
+
+*Make sure to run the model within this conda environment, which contains all the necessary packages.*
 
 ### 2. Set MORPH as your working directory
 Please navigate to the directory where you cloned the GitHub repository:
