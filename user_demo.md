@@ -50,28 +50,29 @@ MORPH/data
 ```
 
 ### 5. Prepare and configure the prior knowledge
-1.  Generating the gene embedding dictionaries that incorporate prior biological knowledge (see example in `demo/gene_embedding_tutorial.ipynb`)
-2. Then, open the file located at:
+1. Generate the gene embedding dictionary that incorporates prior biological knowledge by following the example in `demo/gene_embedding_tutorial.ipynb`
+2. Open the file located at:
 ```
 MORPH/data/perturb_embed_file_path.csv
 ```
-and find the row where `representation_type` is `DepMap_GeneEffect`, and update the `file_path` column to the location of the downloaded DepMap file on your machine.
+Add a new row to specify the path to your processed prior knowledge:
+- In the `representation_type` column, enter: `[your_prior_id]` (a unique identifier for your prior knowledge).
+- In the `file_path` column of the same row, enter the full path to your processed `.pkl` file.
 
 ### 6. Run the model
 Navigate to the `MORPH/morph` folder. If you've followed the previous steps, you can do this by typing the following in your terminal:
 ```
 cd morph
 ```
+Next, open the `run.sh` file and update the following fields:
+- Set `modality` to `your_modality` - e.g., `rna` if you are using rna-seq data.
+- Set `dataset_name` to `[your_data_id]` — this should match the ID you used in `scdata_file_path.csv`.
+- Set `leave_out_test_set_ids` to the appropriate split ID — this should correspond to the ID specified in your train-test split file under column `test_set_id` (created in step 4).
+- Set `representation_types` to `[your_prior_id]` — this should match the name you used in `perturb_embed_file_path.csv`.
 
-Once you're in the correct directory, change the hyperparameters in `run.sh` to account for your new data and train-test split. You can also optimize the hyperparameters for models here.
+You can also customize or optimize hyperparameters in this file.
 
-you can run MORPH using the default settings and automatically evaluate the results after completion:
-```
-./run.sh
-```
-
-
-you can specify the hyperparameters in `run.sh` and run MORPH and automatically evaluate the results upon completion:
+To run MORPH using the default settings and automatically evaluate the results upon completion, execute:
 ```
 ./run.sh
 ```
