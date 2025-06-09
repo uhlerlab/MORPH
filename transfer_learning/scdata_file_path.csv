@@ -1,5 +1,0 @@
-dataset,file_path
-example_data,path_to_example_data
-norman_k562_hvg,/home/che/perturb-project/predict_model/dataset/norman_2019/Norman2019_normalized_hvg.h5ad
-replogle_k562_gwps_hvg,/home/che/perturb-project/predict_model/dataset/replogle_k562/K562_gwps_normalized_hvg.h5ad
-replogle_k562_essential_hvg,/home/che/perturb-project/predict_model/dataset/replogle_k562/K562_essential_normalized_hvg.h5ad
