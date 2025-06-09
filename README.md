@@ -5,7 +5,7 @@ Code for paper: MORPH predicts the single-cell outcome of genetic perturbations 
 arXiv link: [to-add]
 
 ## System requirements
-The code has been developed on a high-performance system running Ubuntu 20.04.4 LTS, equipped with an AMD EPYC 7513 32-Core Processor (128 threads total), 1 TB of RAM, and eight NVIDIA RTX A5000 GPUs using CUDA version 11.6. However, the demo application of our pipeline described below only requires a Linux-based system with at least 20 GB of free disk space, one GPU, and an internet connection, and therefore can be run on significantly less powerful hardware.
+The code has been developed on a high-performance system running Ubuntu 20.04.4 LTS, equipped with an AMD EPYC 7513 32-Core Processor (128 threads total), 1 TB of RAM, and eight NVIDIA RTX A5000 GPUs using CUDA version 11.6. However, the demo application of our pipeline described below only requires a Linux-based system with at least 20 GB of free disk space, *one GPU*, and an internet connection, and therefore can be run on significantly less powerful hardware.
 
 ## Step-by-step guide
 
