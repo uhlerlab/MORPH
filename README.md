@@ -46,13 +46,13 @@ conda
 <details> <summary><b>
 Don't see anything or get an error like "command not found"?
 </b></summary>
-That means Anaconda or Miniconda is not installed yet.
+That means Anaconda or Miniconda is not installed yet. 
 
 To install Miniconda:
-
-Open a new terminal.
-Copy and paste the following commands one by one:
+1. Open a new terminal.
+2. Copy and paste the following commands **one by one**:
 ```
+bash
 mkdir -p ~/miniconda3
 wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda3/miniconda.sh
 bash ~/miniconda3/miniconda.sh -b -u -p ~/miniconda3
@@ -77,6 +77,21 @@ source ~/.bashrc
 ```
 
 # 
+
+<!-- #### Install pytorch
+1. **Create a new conda environment**:
+   ```
+   conda create -n morph python=3.11
+   conda activate morph
+   ```
+2. Check the cuda version by running `nvcc --version` or `ls /usr/local/ | grep cuda`. 
+3. Go to the [pytorch webpage](https://pytorch.org/get-started/previous-versions/) and search for the matching CUDA version. Copy and run the suggested command.
+4. To test the installation, run `python` and type:
+    ```
+    import torch
+    print(torch.__version__)
+    print(torch.cuda.is_available())  # Should return True if CUDA is properly configured
+    ``` -->
 
 ### 2. Clone the repository
 
