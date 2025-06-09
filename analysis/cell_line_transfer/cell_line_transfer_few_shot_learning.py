@@ -35,35 +35,29 @@ rand_seed = 9
 pl.seed_everything(rand_seed)
 log = True
 
-# load in data
-train_dataset = 'transfer_cell_line_rpe1_train'
-test_dataset = 'transfer_cell_line_k562_essential_test'
-dataset_name = train_dataset + '_' + test_dataset
-use_hvg = 'True'
-train_dataset_name = train_dataset + ('_hvg' if use_hvg else '_full')
-test_dataset_name = test_dataset + ('_hvg' if use_hvg else '_full')
-leave_out_test_set_id = 'fine_tune'
+# Update here --------------------------------------------------------
+test_dataset = 'your_data_id' # put your dataset id here
+leave_out_test_set_id = 'your_test_set_id' # put your test set id here
+# ---------------------------------------------------------------
 
-# hyperparameters
+# hyperparameters (optional to change)
 train_epoch = 50
-mxBeta =2
+mxBeta=2
 mxAlpha=2
 print('train_epoch:', train_epoch)
-print('train_dataset:', train_dataset)
 print('test_dataset:', test_dataset)
-print('dataset_name:', dataset_name)
-print('use_hvg:', use_hvg)
+print('leave_out_test_set_id:', leave_out_test_set_id)
 
 device = 'cuda:5'
 print('device:', device)
-savedir = '/home/che/perturb-project/git/MORPH/result/rna/transfer_cell_line_rpe1_train_hvg/transfer_cell_line/DepMap_GeneEffect_MORPH_run1730258322'
+savedir = f'{morph_path}/transfer_learning'
 print('savedir:', savedir)
-model_name = 'best_model.pt'
+model_name = 'model.pt'
 print('model_name:', model_name)
 
 # 1. Load in single-cell data ------------------------------------------------
-scdata_file = pd.read_csv('/home/che/perturb-project/git/MORPH/data/scdata_file_path.csv')
-adata_path = scdata_file[scdata_file['dataset'] == test_dataset][scdata_file['use_hvg'] == (use_hvg == 'True')]['file_path'].values[0]
+scdata_file = pd.read_csv(f'{morph_path}/data/scdata_file_path.csv')
+adata_path = scdata_file[scdata_file['dataset'] == test_dataset]['file_path'].values[0]
 adata_test = sc.read_h5ad(adata_path)
 print('loaded adata_test:', adata_path)
 print('adata_test.shape:', adata_test.shape)
@@ -76,9 +70,6 @@ model = torch.load(f'{savedir}/{model_name}', map_location=device) if savedir is
 print('loaded model from:', f'{savedir}/{model_name}')
 with open(f'{savedir}/config.json', 'r') as f:
     config = json.load(f)
-
-assert config['dataset'] == train_dataset
-assert config['use_hvg'] == use_hvg
 
 print('batch size:', config['batch_size'])
 print(config['model'])
@@ -98,7 +89,7 @@ print('training epochs', config['epochs'])
 print('data', config['dataset'])
 
 # 3. Create dataloader test cell line -----------------------------------------
-split_path = f'/home/che/perturb-project/git/MORPH/data/{test_dataset_name}_splits.csv'
+split_path = f'{morph_path}/data/{test_dataset}_splits.csv'
 split_df = pd.read_csv(split_path)
 test_set_list = split_df[split_df['test_set_id'] == leave_out_test_set_id]['test_set'].apply(lambda x: x.split(',')).values[0]
 print('len of test_set_list', len(test_set_list))
@@ -109,7 +100,9 @@ train_set_list = [x for x in all_perturbations if x not in test_set_list]
 print('len of train_set_list', len(train_set_list))
 print('len of all_perturbations', len(all_perturbations))
 
-output_dir = f"{savedir}/{leave_out_test_set_id}_{len(train_set_list)}/{model_name.replace('.pt', '')}_epochs_{train_epoch}_rand_seed_{rand_seed}"
+assert len(train_set_list) > 0, "This script is for few-shot learning, so the training set should not be empty."
+
+output_dir = f"{savedir}/{leave_out_test_set_id}_{len(train_set_list)}/epochs_{train_epoch}_rand_seed_{rand_seed}"
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
 
@@ -203,7 +196,7 @@ model_ft.to(device)
 optimizer = torch.optim.Adam(model_ft.parameters(), lr=config['lr'])
 
 if log:
-    project_name = f'cell_line_transfer_ctrl_few_shot_{test_dataset_name}'
+    project_name = f'transfer_few_shot_{test_dataset}'
     wandb.init(project=project_name, name=savedir.split('/')[-1])  #name should be the run time after fixing the os.makedirs bug
 
 for n in range(0, train_epoch):
@@ -248,7 +241,6 @@ for n in range(0, train_epoch):
         ct += 1
         lossAv += loss.detach().cpu().numpy()
         mmdAv += mmd_loss.detach().cpu().numpy()
-        # mmdMarkerAv += mmd_loss_marker.detach().cpu().numpy()
         reconAv += recon_loss.detach().cpu().numpy()
         if z_logvar is not None:
             klAv += kl_loss.detach().cpu().numpy()
@@ -258,14 +250,12 @@ for n in range(0, train_epoch):
             wandb.log({'mmd_loss':mmd_loss})
             wandb.log({'recon_loss':recon_loss})
             wandb.log({'kl_loss':kl_loss})
-            # wandb.log({'mmd_loss_marker':mmd_loss_marker})
         
     print('Epoch ' + str(n) + ': Loss=' + str(lossAv / ct) + ', ' + 'MMD=' + str(mmdAv / ct) + ', ' + 'MSE=' + str(reconAv / ct) + ', ' + 'KL=' + str(klAv / ct))
     
     if log:
         wandb.log({'epoch avg loss': lossAv/ct})
         wandb.log({'epoch avg mmd_loss': mmdAv/ct})
-        # wandb.log({'epoch avg mmd_loss_marker': mmdMarkerAv/ct})
         wandb.log({'epoch avg recon_loss': reconAv/ct})
         wandb.log({'epoch avg kl_loss': klAv/ct})
         wandb.log({'beta': beta_schedule[n]})

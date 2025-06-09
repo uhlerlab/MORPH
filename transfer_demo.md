@@ -66,7 +66,11 @@ and find the row where `representation_type` is `DepMap_GeneEffect`, and update 
 > Note: In some contexts, alternative priors may outperform DepMap, depending on the biological setting and data domain.
 
 ### 6. Download the pre-trained model
-Download the pretrained model from [here](https://drive.google.com/drive/folders/1TQJE281q4xH7HcNHMg1v0urD99EDj5bO?usp=drive_link).
+1. Go to this link: [Pretrained Model Download](https://drive.google.com/drive/folders/1TQJE281q4xH7HcNHMg1v0urD99EDj5bO?usp=drive_link)
+2. Download both of the following files:
+   - `model.pt`
+   - `config.json`
+3. Move the downloaded files into the following folder: `MORPH/transfer_learning`.
 
 ### 7. Fine-tune the model on your dataset
 Navigate to the `MORPH/morph/analysis/cell_line_transfer` folder. If you've followed the previous steps, you can do this by typing the following in your terminal:
@@ -75,10 +79,8 @@ cd morph/analysis/cell_line_transfer
 ```
 
 Next, open the `cell_line_transfer_few_shot_learning.py` file and update the following fields:
-- Set `modality` to `your_modality` - e.g., `rna` if you are using rna-seq data.
-- Set `dataset_name` to `[your_data_id]` — this should match the ID you used in `scdata_file_path.csv`.
-- Set `leave_out_test_set_ids` to the appropriate split ID — this should correspond to the ID specified in your train-test split file under column `test_set_id` (created in step 4).
-- Set `representation_types` to `[your_prior_id]` — this should match the name you used in `perturb_embed_file_path.csv`.
+- Set `test_dataset` to `[your_data_id]` — this should match the ID you used in `scdata_file_path.csv`.
+- Set `leave_out_test_set_id` to the appropriate split ID — this should correspond to the ID specified in your train-test split file under column `test_set_id` (created in step 4).
 
 You can also customize or optimize hyperparameters in this file.
 
