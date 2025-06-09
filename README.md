@@ -104,7 +104,9 @@ git clone https://github.com/chujunhe/MORPH.git
 
 ### 3. Installation
 
-Make sure you are in the root directory (i.e., `MORPH/`) and follow the two steps illustrated below
+Make sure you are in the root directory (i.e., `MORPH/`) by typing `cd MORPH`. 
+
+Then follow the two steps illustrated below
 
 1. Create a conda environment using `environment.yaml` (all dependencies are included; whole process takes about 5 min):
 ```
