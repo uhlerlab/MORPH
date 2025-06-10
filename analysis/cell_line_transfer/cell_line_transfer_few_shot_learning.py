@@ -22,6 +22,7 @@ import pytorch_lightning as pl
 filterwarnings('ignore')
 current_dir = os.path.dirname(os.path.abspath(__file__))
 morph_path = os.path.abspath(os.path.join(current_dir, '..', '..', 'morph'))
+morph_main_path = os.path.abspath(os.path.join(current_dir, '..', '..'))
 sys.path.append(morph_path)
 
 from inference import *
@@ -36,8 +37,9 @@ pl.seed_everything(rand_seed)
 log = True
 
 # Update here --------------------------------------------------------
-test_dataset = 'your_data_id' # put your dataset id here
-leave_out_test_set_id = 'your_test_set_id' # put your test set id here
+test_dataset = 'norman_k562_hvg' # put your dataset id here
+leave_out_test_set_id = 'random_fold_1' # put your test set id here
+trained_model = 'replogle_gwps_trained_model_small' # use the small one by default, change to the large one by setting this to 'replogle_gwps_trained_model_large'
 # ---------------------------------------------------------------
 
 # hyperparameters (optional to change)
@@ -50,13 +52,13 @@ print('leave_out_test_set_id:', leave_out_test_set_id)
 
 device = 'cuda:5'
 print('device:', device)
-savedir = f'{morph_path}/transfer_learning'
+savedir = f'{morph_main_path}/transfer_learning/{trained_model}'
 print('savedir:', savedir)
 model_name = 'model.pt'
 print('model_name:', model_name)
 
 # 1. Load in single-cell data ------------------------------------------------
-scdata_file = pd.read_csv(f'{morph_path}/data/scdata_file_path.csv')
+scdata_file = pd.read_csv(f'{morph_main_path}/data/scdata_file_path.csv')
 adata_path = scdata_file[scdata_file['dataset'] == test_dataset]['file_path'].values[0]
 adata_test = sc.read_h5ad(adata_path)
 print('loaded adata_test:', adata_path)
@@ -72,24 +74,23 @@ with open(f'{savedir}/config.json', 'r') as f:
     config = json.load(f)
 
 print('batch size:', config['batch_size'])
-print(config['model'])
+print('model_type:', config['model'])
 print('label_1:', config['label'])
 print('label_2:', config['label_2'])
 print('label_3:', config['label_3'])
 print('lr:', config['lr'])
 print('mmd_sigma:', config['MMD_sigma'])
-print('use_hvg:',config['use_hvg'])
-print('latdim_gene:',config['latdim_gene'])
+print('latdim_ctrl:',config['latdim_ctrl'])
 print('latdim_ptb:',config['latdim_ptb'])
 if 'hidden_decoder_dim' in config:
     print('hidden_decoder_dim:',config['hidden_decoder_dim'])
 if 'kaiming_init' in config:
     print('kaiming_init:',config['kaiming_init'])
-print('training epochs', config['epochs'])
-print('data', config['dataset'])
+print('training epochs:', config['epochs'])
+print('trained on data:', config['dataset_name'])
 
 # 3. Create dataloader test cell line -----------------------------------------
-split_path = f'{morph_path}/data/{test_dataset}_splits.csv'
+split_path = f'{morph_main_path}/data/{test_dataset}_splits.csv'
 split_df = pd.read_csv(split_path)
 test_set_list = split_df[split_df['test_set_id'] == leave_out_test_set_id]['test_set'].apply(lambda x: x.split(',')).values[0]
 print('len of test_set_list', len(test_set_list))
@@ -102,7 +103,7 @@ print('len of all_perturbations', len(all_perturbations))
 
 assert len(train_set_list) > 0, "This script is for few-shot learning, so the training set should not be empty."
 
-output_dir = f"{savedir}/{leave_out_test_set_id}_{len(train_set_list)}/epochs_{train_epoch}_rand_seed_{rand_seed}"
+output_dir = f"{savedir}/{test_dataset}/{leave_out_test_set_id}/len_train_set_{len(train_set_list)}/epochs_{train_epoch}_rand_seed_{rand_seed}"
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
 
