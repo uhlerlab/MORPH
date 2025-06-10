@@ -90,8 +90,8 @@ and find the row where `representation_type` is `DepMap_GeneEffect`, and update 
 > Because the pre-trained model was trained using **DepMap** as the source of prior knowledge, we recommend using **DepMap** embeddings when performing transfer learning. If you prefer to use a different type of prior knowledge (e.g., foundation model embeddings or pathway-based features), you should **retrain the model from scratch** using your chosen prior, and then follow the same steps outlined here.
 > Note: In some contexts, alternative priors may outperform DepMap, depending on the biological setting and data domain.
 
-### 6. Download the pre-trained model
-1. Go to this [link](https://drive.google.com/drive/folders/1TQJE281q4xH7HcNHMg1v0urD99EDj5bO?usp=drive_link)
+### 6. The pre-trained models are saved in folder `MORPH/transfer_learning`
+<!-- 1. Go to this [link](https://drive.google.com/drive/folders/1TQJE281q4xH7HcNHMg1v0urD99EDj5bO?usp=drive_link)
 2. Download the folder named: `replogle_gwps_trained_model_small`
 > 💡 **Note:**  
 > We also provide a larger version of the model called `replogle_gwps_trained_model_large`, trained on the same dataset but with increased model capacity and better results on gwps dataset.
@@ -114,8 +114,15 @@ MORPH/
     └── replogle_gwps_trained_model_small/
         ├── model.pt
         └── config.json
-```
+``` -->
 
+We provide two versions of the pretrained model:
+- `replogle_gwps_trained_model_small`: A lightweight version of the model, suitable for quick testing and limited-resource environments.
+- `replogle_gwps_trained_model_large`: A higher-capacity model trained on the same dataset, offering better performance on the GWPS dataset.
+
+Each folder should contain the following files:
+- `model.pt` – the pretrained model weights  
+- `config.json` – the model configuration file
 
 ### 7. Fine-tune the model on your dataset
 1. Navigate to the `MORPH/morph/analysis/cell_line_transfer` folder.
