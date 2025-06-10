@@ -120,7 +120,7 @@ We provide two versions of the pretrained model:
 - `replogle_gwps_trained_model_small`: A lightweight version of the model, suitable for quick testing and limited-resource environments.
 - `replogle_gwps_trained_model_large`: A higher-capacity model trained on the same dataset, offering better performance on the GWPS dataset.
 
-Each folder should contain the following files:
+Each folder contains the following files:
 - `model.pt` – the pretrained model weights  
 - `config.json` – the model configuration file
 
