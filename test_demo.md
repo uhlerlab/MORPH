@@ -54,7 +54,7 @@ MORPH/data/norman_k562_hvg_splits.csv
 No action is needed.
 
 ### 5. Download and configure the prior knowledge
-Download the file named `depmap_crispr_gene_effect_processed.pkl` from [here](https://drive.google.com/drive/folders/1TQJE281q4xH7HcNHMg1v0urD99EDj5bO?usp=drive_link).
+Download the file named `depmap_crispr_gene_effect_processed.pkl` from [here](https://drive.google.com/drive/folders/1TQJE281q4xH7HcNHMg1v0urD99EDj5bO?usp=drive_link) (if you used gdown to download the entire folder in step 3, you may skip the download).
 
 Then, open the file located at:
 ```
