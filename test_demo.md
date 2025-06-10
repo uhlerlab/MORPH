@@ -43,14 +43,15 @@ Replace `path/to/MORPH` with the actual path on your machine.
 ### 3. Download and configure the input single-cell data
 1. Download the processed single-cell dataset from Norman et al. (2019) [here](https://drive.google.com/drive/folders/1TQJE281q4xH7HcNHMg1v0urD99EDj5bO?usp=drive_link). The file is named `Norman2019_normalized_hvg.h5ad`.
 2. Open the file located at `MORPH/data/scdata_file_path.csv` and add a new row to specify the path to the downloaded data:
-    - In the `dataset` column, enter: `norman_k562_hvg `(**do not change this name**, as it must match the entries in the train-test split file).
-    - In the corresponding `file_path` column, enter the full path to the downloaded `.h5ad` file.
+    - Find the row where `dataset` column is `norman_k562_hvg `(**do not change this name**, as it must match the entries in the train-test split file).
+    - In the corresponding `file_path` column, update the value to be the full path to the downloaded `.h5ad` file.
 
-### 4. Download and save the train-test splits
-Download the train-test split file from [here](https://drive.google.com/drive/folders/1TQJE281q4xH7HcNHMg1v0urD99EDj5bO?usp=drive_link). The file is named `norman_k562_hvg_splits.csv`. Save this file to the following directory:
+### 4. Get the train-test splits
+We provided a sample split file in the following directory:
 ```
-MORPH/data
+MORPH/data/norman_k562_hvg_splits.csv
 ```
+No action is needed.
 
 ### 5. Download and configure the prior knowledge
 Download the file named `depmap_crispr_gene_effect_processed.pkl` from [here](https://drive.google.com/drive/folders/1TQJE281q4xH7HcNHMg1v0urD99EDj5bO?usp=drive_link).
