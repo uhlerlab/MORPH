@@ -44,6 +44,31 @@ Replace `path/to/MORPH` with the actual path on your machine.
     - In the `dataset` column, enter: `[your_data_id]` (a unique identifier for your dataset).
     - In the `file_path` column of the same row, enter the full path to your processed `.h5ad` file.
 
+<details>
+<summary><b>
+Click here if you encounter an error about "Mismatch in gene sets" during the data preprocessing step
+</b></summary>
+
+If you're seeing an error related to "Mismatch in gene sets", it likely means that the input gene list does not match what the released model expects. As explained in `demo/data_tutorial_transfer_learning.ipynb`, **you cannot directly fine-tune the released model if the genes do not align.**
+
+However, you can still leverage the power of transfer learning by following these steps:
+
+1. **Identify your source and target datasets.**  
+   We recommend using the genome-wide Perturb-seq dataset from [Replogle et al. (2022)](https://www.sciencedirect.com/science/article/pii/S0092867422005979?via%3Dihub) as the source dataset.
+
+2. **Subset both datasets to their overlapping genes.**  
+   Follow the instructions in `demo/data_tutorial_transfer_learning.ipynb` to identify the shared genes and align the two datasets accordingly.
+
+3. **Normalize and preprocess the data.**  
+   Use `demo/data_tutorial.ipynb` to perform standard normalization and preprocessing on the two aligned datasets.
+
+4. **Train MORPH on the source dataset.**  
+   Refer to [user_demo](user_demo.md) to train a new MORPH model using your processed source data.
+
+5. **Fine-tune MORPH on your target dataset.**  
+   Adapt the trained MORPH model to your target dataset by following the next steps in the tutorial.
+</details>
+
 ### 4. Create the train-test splits
 1. Create a train-test split for your data following the example in `demo/split_tutorial.ipynb` 
 2. Name this file as `[your_data_id]_splits.csv` (**Note: the data id must match what you have above**)
