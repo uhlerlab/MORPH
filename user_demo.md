@@ -59,11 +59,12 @@ Add a new row to specify the path to your processed prior knowledge:
 - In the `representation_type` column, enter: `[your_prior_id]` (a unique identifier for your prior knowledge).
 - In the `file_path` column of the same row, enter the full path to your processed `.pkl` file.
 
+> [!NOTE]
+> If you want to use the processed DepMap prior, please follow step 5 in [this tutorial](test_demo.md). 
+
 ### 6. Run the model
-Navigate to the `MORPH/morph` folder. If you've followed the previous steps, you can do this by typing the following in your terminal:
-```
-cd morph
-```
+Navigate to the `MORPH/morph` folder. 
+
 Next, open the `run.sh` file and update the following fields:
 - Set `modality` to `your_modality` - e.g., `rna` if you are using rna-seq data.
 - Set `dataset_name` to `[your_data_id]` — this should match the ID you used in `scdata_file_path.csv`.
@@ -76,3 +77,19 @@ To run MORPH using the default settings and automatically evaluate the results u
 ```
 ./run.sh
 ```
+
+> [!NOTE]
+> When you run the code, you might see a prompt from **W&B**, a tool for tracking and visualizing results.  
+You **don’t need a W&B account** if you just want to run the model without visualizations.
+> If you see this prompt:
+> ```
+> wandb: (1) Create a W&B account
+> wandb: (2) Use an existing W&B account
+> wandb: (3) Don't visualize my results
+> wandb: Enter your choice:
+> ```
+> 👉 Simply type `3` and press Enter to skip logging:
+> ```
+> wandb: Enter your choice: 3
+> ```
+> W&B will be disabled for this run.
