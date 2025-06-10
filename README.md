@@ -121,6 +121,10 @@ conda env create -f environment.yml -n morph
 pip install -e .
 ```
 
+> [!NOTE]
+> Check if PyTorch can use a CUDA-capable GPU by openning python `python` and running `import torch;torch.cuda.is_available()`. If it returns `False` with an error message, you might encounter issues later.
+> This is usually caused by incompatible versions, and can usually be solved by running in command line `pip uninstall torch` followed by `pip install torch --index-url https://download.pytorch.org/whl/cu121`
+
 #
 
 ### 4. Running the experiments
@@ -136,7 +140,7 @@ Source code folder: `./morph/`
 
 ## Figures/Analyses in the paper
 
-Illustraive figures: made using powerpoint
+Illustrative figures: made using powerpoint
 
 Pointers for nonillustrative figures:
 
