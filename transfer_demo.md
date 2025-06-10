@@ -105,11 +105,14 @@ mkdir -p MORPH/transfer_learning
 ```
 4. Move the downloaded folder into this new directory (manually or with the command: `mv /path/to/replogle_gwps_trained_model_small MORPH/transfer_learning/`)
 After this, your directory structure should look like:
+```
 MORPH/
 └── transfer_learning/
     └── replogle_gwps_trained_model_small/
         ├── model.pt
         └── config.json
+```
+
 
 ### 7. Fine-tune the model on your dataset
 Navigate to the `MORPH/morph/analysis/cell_line_transfer` folder. If you've followed the previous steps, you can do this by typing the following in your terminal:
