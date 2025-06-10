@@ -123,7 +123,7 @@ pip install -e .
 
 > [!NOTE]
 > Check if PyTorch can use a CUDA-capable GPU by openning python `python` and running `import torch;torch.cuda.is_available()`. If it returns `False` with an error message, you might encounter issues later.
-> This is usually caused by incompatible versions, and can usually be solved by running in command line `pip uninstall torch` followed by `pip install torch --index-url https://download.pytorch.org/whl/cu121`
+> This may be caused by incompatible versions, and can usually be solved by running in command line `pip uninstall torch` followed by `pip install torch --index-url https://download.pytorch.org/whl/cu121`
 
 #
 
