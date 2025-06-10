@@ -2,14 +2,14 @@
 
 Code for paper: MORPH predicts the single-cell outcome of genetic perturbations across various data modalities
 
-arXiv link: [to-add]
+biorxiv link: [to-add]
 
 ## System requirements
 The code has been developed on a high-performance system running Ubuntu 20.04.4 LTS, equipped with an AMD EPYC 7513 32-Core Processor (128 threads total), 1 TB of RAM, and eight NVIDIA RTX A5000 GPUs using CUDA version 11.6. However, the demo application of our pipeline described below only requires a Linux-based system with at least 20 GB of free disk space, *one GPU*, and an internet connection, and therefore can be run on significantly less powerful hardware.
 
 ## Step-by-step guide
 
-### 1. Perequisites
+### 1. Prerequisites
 
 #### Bash shell
 To follow the steps in this guide, you’ll need to use a bash shell. First, open a terminal:
@@ -68,7 +68,7 @@ If you encounter any issues, please refer to the official installation guide whi
 
 </details>
 
-Make sure conda is initialized appropriately in your shell by typing
+Make sure conda is initialized appropriately in your shell by typing 
 
 ```
 bash
@@ -95,7 +95,7 @@ source ~/.bashrc
 
 ### 2. Clone the repository
 
-If the perequisites are satisfied, please clone this repository by running the following command in a **new** terminal.
+If the prerequisites are satisfied, please clone this repository by running the following command in a **new** terminal.
 ```
 git clone https://github.com/chujunhe/MORPH.git
 ```
