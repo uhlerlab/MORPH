@@ -2,7 +2,7 @@
 
 ## Overview
 
-This version of the demo shows how to apply **MORPH** to user-provided single-cell data **using a pre-trained model** we provide. Unlike the [user input demo](user_demo.md), which trains MORPH from scratch, this variant demonstrates how to **fine-tune or directly apply** a model that has already been trained on large-scale perturbation data.
+This version of the demo shows how to apply **MORPH** to user-provided single-cell data **using a pre-trained model** we provide. Unlike the [user input demo](user_demo.md), which trains MORPH from scratch, this variant demonstrates how to **fine-tune** a model that has already been trained on large-scale perturbation data.
 
 Leveraging a pre-trained model can significantly improve performance—especially in real-world settings—by transferring learned representations from related datasets. We recommend this approach for most practical applications, as it makes the most of the available prior knowledge.
 
