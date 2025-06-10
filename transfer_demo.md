@@ -95,6 +95,7 @@ and find the row where `representation_type` is `DepMap_GeneEffect`, and update 
 2. Download the folder named: `replogle_gwps_trained_model_small`
 > 💡 **Note:**  
 > We also provide a larger version of the model called `replogle_gwps_trained_model_large`, trained on the same dataset but with increased model capacity.
+
 The folder you download should contain the following files:
 - `model.pt` – the pretrained model weights  
 - `config.json` – the model configuration file
