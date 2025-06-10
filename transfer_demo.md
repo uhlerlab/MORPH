@@ -105,6 +105,7 @@ bash
 mkdir -p MORPH/transfer_learning
 ```
 4. Move the downloaded folder into this new directory (manually or with the command: `mv /path/to/replogle_gwps_trained_model_small MORPH/transfer_learning/`)
+
 After this, your directory structure should look like:
 ```
 MORPH/
