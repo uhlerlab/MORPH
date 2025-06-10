@@ -41,8 +41,8 @@ cd path/to/MORPH
 Replace `path/to/MORPH` with the actual path on your machine.
 
 ### 3. Download and configure the input single-cell data
-1. Download the processed single-cell dataset from Norman et al. (2019) [here](https://drive.google.com/drive/folders/1TQJE281q4xH7HcNHMg1v0urD99EDj5bO?usp=drive_link). The file is named `Norman2019_normalized_hvg.h5ad`.
-2. Open the file located at `MORPH/data/scdata_file_path.csv` to specify the path to the downloaded data:
+1. Download the processed single-cell dataset from Norman et al. (2019) [here](https://drive.google.com/drive/folders/1TQJE281q4xH7HcNHMg1v0urD99EDj5bO?usp=drive_link). The file is named `Norman2019_normalized_hvg.h5ad`. On linux, you can use [gdown](https://github.com/wkentaro/gdown) to download the file by running `pip install gdown` followed by `gdown --folder https://drive.google.com/drive/folders/1TQJE281q4xH7HcNHMg1v0urD99EDj5bO`
+3. Open the file located at `MORPH/data/scdata_file_path.csv` to specify the path to the downloaded data:
     - Find the row where `dataset` column is `norman_k562_hvg `(**do not change this name**, as it must match the entries in the train-test split file).
     - In the corresponding `file_path` column, update the value to be the full path to the downloaded `.h5ad` file on your machine.
 
@@ -92,3 +92,6 @@ You **don’t need a W&B account** if you just want to run the model without vis
 ---
 
 That's it! The demo will run end-to-end and output results using the provided public data and prior.
+
+### (Optional / Advanced settings) Downstream Analysis
+You may follow the instructions in the last section of [README file](README.md) to reproduce the downstream analysis.
