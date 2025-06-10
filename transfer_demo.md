@@ -94,7 +94,7 @@ and find the row where `representation_type` is `DepMap_GeneEffect`, and update 
 1. Go to this [link](https://drive.google.com/drive/folders/1TQJE281q4xH7HcNHMg1v0urD99EDj5bO?usp=drive_link)
 2. Download the folder named: `replogle_gwps_trained_model_small`
 > 💡 **Note:**  
-> We also provide a larger version of the model called `replogle_gwps_trained_model_large`, trained on the same dataset but with increased model capacity.
+> We also provide a larger version of the model called `replogle_gwps_trained_model_large`, trained on the same dataset but with increased model capacity and better results on gwps dataset.
 
 The folder you download should contain the following files:
 - `model.pt` – the pretrained model weights  
@@ -117,14 +117,10 @@ MORPH/
 
 
 ### 7. Fine-tune the model on your dataset
-Navigate to the `MORPH/morph/analysis/cell_line_transfer` folder. If you've followed the previous steps, you can do this by typing the following in your terminal:
-```
-cd morph/analysis/cell_line_transfer
-```
-
-Next, open the `cell_line_transfer_few_shot_learning.py` file and update the following fields:
-- Set `test_dataset` to `[your_data_id]` — this should match the ID you used in `scdata_file_path.csv`.
-- Set `leave_out_test_set_id` to the appropriate split ID — this should correspond to the ID specified in your train-test split file under column `test_set_id` (created in step 4).
+1. Navigate to the `MORPH/morph/analysis/cell_line_transfer` folder.
+2. Open the `cell_line_transfer_few_shot_learning.py` file and update the following fields:
+   - Set `test_dataset` to `[your_data_id]` — this should match the ID you used in `scdata_file_path.csv`.
+   - Set `leave_out_test_set_id` to the appropriate split ID — this should correspond to the ID specified in your train-test split file under column `test_set_id` (created in step 4).
 
 You can also customize or optimize hyperparameters in this file.
 
