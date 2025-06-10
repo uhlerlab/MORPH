@@ -72,4 +72,20 @@ Once you're in the correct directory, you can run MORPH using the default settin
 ./run.sh
 ```
 
+> [!NOTE] When you run the code, you might see a prompt from **W&B**, a tool for tracking and visualizing results.  
+You **don’t need a W&B account** if you just want to run the model without visualizations.
+> If you see this prompt:
+> ```
+> wandb: (1) Create a W&B account
+> wandb: (2) Use an existing W&B account
+> wandb: (3) Don't visualize my results
+> wandb: Enter your choice:
+> ```
+> 👉 Simply type `3` and press Enter to skip logging:
+> ```
+> wandb: Enter your choice: 3
+> ```
+> W&B will be disabled for this run.
+
+
 That's it! The demo will run end-to-end and output results using the provided public data and prior.
