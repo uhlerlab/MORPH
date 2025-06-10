@@ -91,11 +91,25 @@ and find the row where `representation_type` is `DepMap_GeneEffect`, and update 
 > Note: In some contexts, alternative priors may outperform DepMap, depending on the biological setting and data domain.
 
 ### 6. Download the pre-trained model
-1. Go to this link: [Pretrained Model Download](https://drive.google.com/drive/folders/1TQJE281q4xH7HcNHMg1v0urD99EDj5bO?usp=drive_link)
-2. Download both of the following files:
-   - `model.pt`
-   - `config.json`
-3. Move the downloaded files into the following folder: `MORPH/transfer_learning`.
+1. Go to this [link](https://drive.google.com/drive/folders/1TQJE281q4xH7HcNHMg1v0urD99EDj5bO?usp=drive_link)
+2. Download the folder named: `replogle_gwps_trained_model_small`
+> 💡 **Note:**  
+> We also provide a larger version of the model called `replogle_gwps_trained_model_large`, trained on the same dataset but with increased model capacity.
+The folder you download should contain the following files:
+- `model.pt` – the pretrained model weights  
+- `config.json` – the model configuration file
+3. Create a new folder inside your MORPH project directory:
+```
+bash
+mkdir -p MORPH/transfer_learning
+```
+4. Move the downloaded folder into this new directory (manually or with the command: `mv /path/to/replogle_gwps_trained_model_small MORPH/transfer_learning/`)
+After this, your directory structure should look like:
+MORPH/
+└── transfer_learning/
+    └── replogle_gwps_trained_model_small/
+        ├── model.pt
+        └── config.json
 
 ### 7. Fine-tune the model on your dataset
 Navigate to the `MORPH/morph/analysis/cell_line_transfer` folder. If you've followed the previous steps, you can do this by typing the following in your terminal:
