@@ -73,7 +73,8 @@ Once you're in the correct directory, you can run MORPH using the default settin
 ```
 
 
-> [!NOTE] When you run the code, you might see a prompt from **W&B**, a tool for tracking and visualizing results.  
+> [!NOTE]
+> When you run the code, you might see a prompt from **W&B**, a tool for tracking and visualizing results.  
 You **don’t need a W&B account** if you just want to run the model without visualizations.
 > If you see this prompt:
 > ```
