@@ -1,4 +1,4 @@
-# Demo Application Using Transfer Learning
+# Demo application for transfer learning
 
 ## Overview
 
