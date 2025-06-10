@@ -1,0 +1,43 @@
+{
+    "mode": "train",
+    "lr": 0.0001,
+    "grad_clip": true,
+    "kernel_num": 10,
+    "hidden_dim": 128,
+    "matched_IO": false,
+    "base_dir": "/home/che/perturb-project/git/MORPH",
+    "seed": 12,
+    "validation_set_ratio": 0.1,
+    "validation_ood_ratio": 0.15,
+    "latdim_ctrl": 200,
+    "latdim_ptb": 200,
+    "geneset_num": 100,
+    "geneset_dim": 50,
+    "batch_size": 32,
+    "tolerance_epochs": 20,
+    "MMD_sigma": 1500,
+    "mxAlpha": 1.0,
+    "mxBeta": 2.0,
+    "Gamma1": 0.0,
+    "Gamma2": 1.0,
+    "modality": "rna",
+    "dataset_name": "replogle_k562_gwps_hvg",
+    "leave_out_test_set_id": "leave_one_out",
+    "label": "DepMap_GeneEffect",
+    "label_2": null,
+    "label_3": null,
+    "null_label": "zeros",
+    "adata_path": "/home/che/perturb-project/predict_model/dataset/replogle_k562/K562_gwps_normalized_hvg.h5ad",
+    "leave_out_test_set": [
+        "RMDN1"
+    ],
+    "dim": 5000,
+    "cdim": 1100,
+    "cdim_2": null,
+    "cdim_3": null,
+    "model": "MORPH",
+    "epochs": 100,
+    "ptb_leave_out_list": [
+        "RMDN1"
+    ]
+}
