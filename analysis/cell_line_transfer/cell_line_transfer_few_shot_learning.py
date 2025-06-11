@@ -147,38 +147,36 @@ print('model_name:', model_name)
 model_ft = torch.load(f'{savedir}/{model_name}', map_location=device) if savedir is not None else None
 
 # loss function definition
-def loss_function(y_hat, y, y_hat_marker, y_marker, x_recon, x, mu, logvar, MMD_sigma, kernel_num, matched_IO=False, 
-                  reconstruction_loss='mse'):
+def loss_function(y_hat, y, x_recon, x, mu, logvar, 
+                  MMD_sigma, kernel_num, 
+                  gamma1=1, gamma2=0):
 
-    # Define loss functions
-    if not matched_IO:
-        matching_function_interv = MMD_loss(fix_sigma=MMD_sigma, kernel_num=kernel_num) # MMD Distance since we don't have paired data
-        matching_function_interv_marker = MMD_loss(fix_sigma=200, kernel_num=10) # MMD Distance since we don't have paired data
-    else:
-        matching_function_interv = nn.MSELoss() # MSE if there is matched interv/observ samples
-
-    # Compute losses
+    # Compute MMD loss between predicted perturbed samples and true perturbed samples
+    mmd_function_pred = MMD_loss(fix_sigma=MMD_sigma, kernel_num=kernel_num)
     if y_hat is None:
-        MMD = 0
+        pred_loss = 0
     else:
-        MMD = matching_function_interv(y_hat, y)
-
-    if y_hat_marker is None:
-        MMD_marker = 0
-    else:
-        MMD_marker = matching_function_interv_marker(y_hat_marker, y_marker)
+        pred_loss = mmd_function_pred(y_hat, y)
     
-    if reconstruction_loss == 'mse':
-        matching_function_recon = nn.MSELoss() # MSE for reconstruction, reduction = mean by default
-    elif reconstruction_loss == 'mmd':
-        matching_function_recon = MMD_loss(fix_sigma=MMD_sigma, kernel_num=kernel_num)
-    recon_loss = matching_function_recon(x_recon, x)
-
+    # Compute reconstruction loss between reconstructed control samples and true control samples
+    mmd_function_recon = MMD_loss(fix_sigma=MMD_sigma, kernel_num=kernel_num)
+    if gamma1 > 0:
+        recon_mmd = mmd_function_recon(x_recon, x)
+    else:
+        recon_mmd = 0
+    if gamma2 > 0:
+        recon_mse = nn.MSELoss()(x_recon, x)
+    else:
+        recon_mse = 0
+    recon_loss = gamma1*recon_mmd + gamma2*recon_mse
+    
+    # Compute KL divergence
     if logvar is None:
         KLD = 0
     else:
         KLD = -0.5*torch.sum(logvar -(mu.pow(2)+logvar.exp())+1)/x.shape[0]
-    return MMD, recon_loss, KLD, MMD_marker
+    
+    return pred_loss, recon_loss, KLD
 
 ## Loss parameters
 beta_schedule = torch.zeros(train_epoch) # weight on the KLD
@@ -204,7 +202,6 @@ for n in range(0, train_epoch):
     lossAv = 0
     ct = 0
     mmdAv = 0
-    mmdMarkerAv = 0
     reconAv = 0
     klAv = 0
 
@@ -224,12 +221,11 @@ for n in range(0, train_epoch):
         
         y_hat, x_recon, z_mu, z_logvar = model_ft(x, c_1, c_2)
         
-        mmd_loss, recon_loss, kl_loss, _ = loss_function(y_hat, y, 
-                                                         None, None, 
-                                                         x_recon, x, 
-                                                         z_mu, z_logvar, 
-                                                         config['MMD_sigma'], config['kernel_num'], config['matched_IO'],
-                                                         reconstruction_loss='mmd')
+        mmd_loss, recon_loss, kl_loss = loss_function(y_hat = y_hat, y = y, 
+                                                      x_recon = x_recon, x = x, 
+                                                      mu = z_mu, logvar = z_logvar, 
+                                                      MMD_sigma = config['MMD_sigma'], kernel_num = config['kernel_num'],
+                                                      gamma1 = config['Gamma1'], gamma2 = config['Gamma2'])
         loss = alpha_schedule[n]*mmd_loss + recon_loss + beta_schedule[n]*kl_loss
         
         loss.backward()
