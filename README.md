@@ -116,7 +116,11 @@ Then follow the two steps illustrated below
 ```
 conda env create -f environment.yml -n morph
 ```
-2. install the current package in editable mode inside the conda environment:
+activate the conda environment if not automatically activated:
+```
+conda activate morph
+```
+2. Install the current package in editable mode inside the conda environment:
 ```
 pip install -e .
 ```
