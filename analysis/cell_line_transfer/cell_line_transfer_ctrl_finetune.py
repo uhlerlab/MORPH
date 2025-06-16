@@ -22,6 +22,7 @@ import pytorch_lightning as pl
 filterwarnings('ignore')
 current_dir = os.path.dirname(os.path.abspath(__file__))
 morph_path = os.path.abspath(os.path.join(current_dir, '..', '..', 'morph'))
+morph_main_path = os.path.abspath(os.path.join(current_dir, '..', '..'))
 sys.path.append(morph_path)
 
 from inference import *
@@ -35,27 +36,22 @@ rand_seed = 12
 pl.seed_everything(rand_seed)
 log = True
 
-# load in data
-train_dataset = 'transfer_cell_line_rpe1_train'
-test_dataset = 'transfer_cell_line_k562_essential_test'
-dataset_name = train_dataset + '_' + test_dataset
-use_hvg = 'True'
-train_dataset_name = train_dataset + ('_hvg' if use_hvg else '_full')
-test_dataset_name = test_dataset + ('_hvg' if use_hvg else '_full')
+# Update here --------------------------------------------------------
+test_dataset = 'norman_k562_hvg' # put your dataset id here
+trained_model = 'replogle_gwps_trained_model_small' # use the small one by default, change to the large one by setting this to 'replogle_gwps_trained_model_large'
+# ---------------------------------------------------------------
 
 # hyperparameters
 train_epoch = 9
 print('train_epoch:', train_epoch)
-print('train_dataset:', train_dataset)
 print('test_dataset:', test_dataset)
-print('dataset_name:', dataset_name)
-print('use_hvg:', use_hvg)
+print('leave out all perturbations in the test set')
 
 device = 'cuda:7'
 print('device:', device)
-savedir = '/home/che/perturb-project/git/MORPH/result/rna/transfer_cell_line_rpe1_train_hvg/transfer_cell_line/DepMap_GeneEffect_MORPH_run1730258322'
+savedir = f'{morph_main_path}/transfer_learning/{trained_model}'
 print('savedir:', savedir)
-model_name = 'best_model.pt'
+model_name = 'model.pt'
 print('model_name:', model_name)
 
 output_dir = f"{savedir}/ctrl_ft/{model_name.replace('.pt', '')}_epochs_{train_epoch}_rand_seed_{rand_seed}"
@@ -63,8 +59,8 @@ if not os.path.exists(output_dir):
     os.makedirs(output_dir)
 
 # 1. Load in single-cell data ------------------------------------------------
-scdata_file = pd.read_csv('/home/che/perturb-project/git/MORPH/data/scdata_file_path.csv')
-adata_path = scdata_file[scdata_file['dataset'] == test_dataset][scdata_file['use_hvg'] == (use_hvg == 'True')]['file_path'].values[0]
+scdata_file = pd.read_csv(f'{morph_main_path}/data/scdata_file_path.csv')
+adata_path = scdata_file[scdata_file['dataset'] == test_dataset]['file_path'].values[0]
 adata_test = sc.read_h5ad(adata_path)
 print('loaded adata_test:', adata_path)
 print('adata_test.shape:', adata_test.shape)
@@ -78,25 +74,21 @@ print('loaded model from:', f'{savedir}/{model_name}')
 with open(f'{savedir}/config.json', 'r') as f:
     config = json.load(f)
 
-assert config['dataset'] == train_dataset
-assert config['use_hvg'] == use_hvg
-
 print('batch size:', config['batch_size'])
-print(config['model'])
+print('model_type:', config['model'])
 print('label_1:', config['label'])
 print('label_2:', config['label_2'])
 print('label_3:', config['label_3'])
 print('lr:', config['lr'])
 print('mmd_sigma:', config['MMD_sigma'])
-print('use_hvg:',config['use_hvg'])
-print('latdim_gene:',config['latdim_gene'])
+print('latdim_ctrl:',config['latdim_ctrl'])
 print('latdim_ptb:',config['latdim_ptb'])
 if 'hidden_decoder_dim' in config:
     print('hidden_decoder_dim:',config['hidden_decoder_dim'])
 if 'kaiming_init' in config:
     print('kaiming_init:',config['kaiming_init'])
-print('training epochs', config['epochs'])
-print('data', config['dataset'])
+print('training epochs:', config['epochs'])
+print('trained on data:', config['dataset_name'])
 
 # 3. Create dataloader test cell line -----------------------------------------
 test_set_list = adata_test.obs['gene'].unique().tolist()
@@ -133,38 +125,36 @@ print('model_name:', model_name)
 model_ft_ctrl = torch.load(f'{savedir}/{model_name}', map_location=device) if savedir is not None else None
 
 # loss function definition
-def loss_function(y_hat, y, y_hat_marker, y_marker, x_recon, x, mu, logvar, MMD_sigma, kernel_num, matched_IO=False, 
-                  reconstruction_loss='mse'):
+def loss_function(y_hat, y, x_recon, x, mu, logvar, 
+                  MMD_sigma, kernel_num, 
+                  gamma1=1, gamma2=0):
 
-    # Define loss functions
-    if not matched_IO:
-        matching_function_interv = MMD_loss(fix_sigma=MMD_sigma, kernel_num=kernel_num) # MMD Distance since we don't have paired data
-        matching_function_interv_marker = MMD_loss(fix_sigma=200, kernel_num=10) # MMD Distance since we don't have paired data
-    else:
-        matching_function_interv = nn.MSELoss() # MSE if there is matched interv/observ samples
-
-    # Compute losses
+    # Compute MMD loss between predicted perturbed samples and true perturbed samples
+    mmd_function_pred = MMD_loss(fix_sigma=MMD_sigma, kernel_num=kernel_num)
     if y_hat is None:
-        MMD = 0
+        pred_loss = 0
     else:
-        MMD = matching_function_interv(y_hat, y)
-
-    if y_hat_marker is None:
-        MMD_marker = 0
-    else:
-        MMD_marker = matching_function_interv_marker(y_hat_marker, y_marker)
+        pred_loss = mmd_function_pred(y_hat, y)
     
-    if reconstruction_loss == 'mse':
-        matching_function_recon = nn.MSELoss() # MSE for reconstruction, reduction = mean by default
-    elif reconstruction_loss == 'mmd':
-        matching_function_recon = MMD_loss(fix_sigma=MMD_sigma, kernel_num=kernel_num)
-    recon_loss = matching_function_recon(x_recon, x)
-
+    # Compute reconstruction loss between reconstructed control samples and true control samples
+    mmd_function_recon = MMD_loss(fix_sigma=MMD_sigma, kernel_num=kernel_num)
+    if gamma1 > 0:
+        recon_mmd = mmd_function_recon(x_recon, x)
+    else:
+        recon_mmd = 0
+    if gamma2 > 0:
+        recon_mse = nn.MSELoss()(x_recon, x)
+    else:
+        recon_mse = 0
+    recon_loss = gamma1*recon_mmd + gamma2*recon_mse
+    
+    # Compute KL divergence
     if logvar is None:
         KLD = 0
     else:
         KLD = -0.5*torch.sum(logvar -(mu.pow(2)+logvar.exp())+1)/x.shape[0]
-    return MMD, recon_loss, KLD, MMD_marker
+    
+    return pred_loss, recon_loss, KLD
 
 beta_schedule = torch.zeros(train_epoch) # weight on the KLD
 if train_epoch > 0:
@@ -180,14 +170,13 @@ model_ft_ctrl.to(device)
 optimizer = torch.optim.Adam(model_ft_ctrl.parameters(), lr=config['lr'])
 
 if log:
-    project_name = f'cell_line_transfer_ctrl_finetune_{test_dataset_name}'
+    project_name = f'transfer_ctrl_finetune_{test_dataset}'
     wandb.init(project=project_name, name=savedir.split('/')[-1])  #name should be the run time after fixing the os.makedirs bug
 
 for n in range(0, train_epoch):
     lossAv = 0
     ct = 0
     mmdAv = 0
-    mmdMarkerAv = 0
     reconAv = 0
     klAv = 0
 
@@ -206,20 +195,12 @@ for n in range(0, train_epoch):
         optimizer.zero_grad()
         
         y_hat, x_recon, z_mu, z_logvar = model_ft_ctrl(x, c_1, c_2)
-        
-        deg_cat = C_y[0]
-        deg_list = adata_test.uns['rank_genes_groups']['names'][deg_cat]
-        n_top_deg = 50
-        degs = [np.where(adata_test.var_names == gene)[0][0] for gene in deg_list[:n_top_deg]]
-        y_marker = y[:, degs]
-        y_hat_marker = y_hat[:, degs]
 
-        mmd_loss, recon_loss, kl_loss, mmd_loss_marker = loss_function(y_hat, y, 
-                                                         y_hat_marker, y_marker, 
-                                                         x_recon, x, 
-                                                         z_mu, z_logvar, 
-                                                         config['MMD_sigma'], config['kernel_num'], config['matched_IO'],
-                                                         reconstruction_loss='mmd')
+        mmd_loss, recon_loss, kl_loss = loss_function(y_hat, y,
+                                                     x_recon, x, 
+                                                     z_mu, z_logvar, 
+                                                     config['MMD_sigma'], config['kernel_num'],
+                                                     gamma1 = 1, gamma2 = 0)
         loss = recon_loss + beta_schedule[n] * kl_loss
         
         loss.backward()
@@ -232,7 +213,6 @@ for n in range(0, train_epoch):
         ct += 1
         lossAv += loss.detach().cpu().numpy()
         mmdAv += mmd_loss.detach().cpu().numpy()
-        mmdMarkerAv += mmd_loss_marker.detach().cpu().numpy()
         reconAv += recon_loss.detach().cpu().numpy()
         if z_logvar is not None:
             klAv += kl_loss.detach().cpu().numpy()
@@ -242,14 +222,12 @@ for n in range(0, train_epoch):
             wandb.log({'mmd_loss':mmd_loss})
             wandb.log({'recon_loss':recon_loss})
             wandb.log({'kl_loss':kl_loss})
-            wandb.log({'mmd_loss_marker':mmd_loss_marker})
         
     print('Epoch ' + str(n) + ': Loss=' + str(lossAv / ct) + ', ' + 'MMD=' + str(mmdAv / ct) + ', ' + 'MSE=' + str(reconAv / ct) + ', ' + 'KL=' + str(klAv / ct))
     
     if log:
         wandb.log({'epoch avg loss': lossAv/ct})
         wandb.log({'epoch avg mmd_loss': mmdAv/ct})
-        wandb.log({'epoch avg mmd_loss_marker': mmdMarkerAv/ct})
         wandb.log({'epoch avg recon_loss': reconAv/ct})
         wandb.log({'epoch avg kl_loss': klAv/ct})
         wandb.log({'beta': beta_schedule[n]})
