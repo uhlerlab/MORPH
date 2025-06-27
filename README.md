@@ -101,7 +101,7 @@ source ~/.bashrc
 
 If the prerequisites are satisfied, please clone this repository by running the following command in a **new** terminal.
 ```
-git clone https://github.com/chujunhe/MORPH.git
+git clone https://github.com/uhlerlab/MORPH
 ```
 
 # 
