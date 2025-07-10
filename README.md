@@ -2,7 +2,7 @@
 
 Code for paper: MORPH predicts the single-cell outcome of genetic perturbations across various data modalities
 
-biorxiv link: [to-add]
+biorxiv link: https://www.biorxiv.org/content/10.1101/2025.06.27.661992v1
 
 ## System requirements
 The code has been developed on a high-performance system running Ubuntu 20.04.4 LTS, equipped with an AMD EPYC 7513 32-Core Processor (128 threads total), 1 TB of RAM, and eight NVIDIA RTX A5000 GPUs using CUDA version 11.6. The demo application of our pipeline can be run on significantly less powerful hardware, requiring:
