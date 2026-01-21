@@ -377,12 +377,12 @@ class MORPH_no_residual1(nn.Module):
         # Attention 1
         z_control = torch.cat((z, z_control), dim=1)
         attn_out_1, alphas_1_ctrl, q_1_ctrl, k_1, v_1 = self.attention_1(query=z_control, gene_set_matrix=gene_set_mtrx)
-        z_control = attn_out_1 + z_control
+        z_control = attn_out_1 #+ z_control
         z_control = self.FF1(z_control) + z_control
 
         # Attention 2
         attn_out_2, alphas_2_ctrl, q_2_ctrl, k_2, v_2 = self.attention_2(query=z_control, gene_set_matrix=gene_set_mtrx)
-        z_control = attn_out_2 #+ z_control
+        z_control = attn_out_2 + z_control
         z_control = self.FF2(z_control) + z_control
         
         x_recon = self.decode(z_control)
