@@ -12,28 +12,44 @@ import time
 import json
 
 # loss function definition
-def loss_function(y_hat, y, x_recon, x, mu, logvar, 
-                  MMD_sigma, kernel_num, 
-                  gamma1=1, gamma2=0):
+def loss_function(y_hat, y, x_recon, x, mu, logvar, MMD_sigma, kernel_num, 
+                  gamma1=0, gamma2=0, reconstruction_loss='mse'):
 
-    # Compute MMD loss between predicted perturbed samples and true perturbed samples
+    # Compute prediction loss
     mmd_function_pred = MMD_loss(fix_sigma=MMD_sigma, kernel_num=kernel_num)
     if y_hat is None:
         pred_loss = 0
+        pred_mmd = 0
+        pred_mse = 0
     else:
-        pred_loss = mmd_function_pred(y_hat, y)
-    
-    # Compute reconstruction loss between reconstructed control samples and true control samples
+        pred_mmd = mmd_function_pred(y_hat, y)
+        # compute MSE loss between mean of y_hat and mean of y
+        y_hat_mean = y_hat.mean(0)
+        y_mean = y.mean(0)
+        pred_mse = nn.MSELoss()(y_hat_mean, y_mean)
+        if gamma2 > 0:
+            pred_loss = (1-gamma2)*pred_mmd + gamma2*pred_mse
+        else:
+            assert gamma2 == 0, "gamma2 should be 0 for the current setting"
+            pred_loss = pred_mmd
+
+    # Compute reconstruction loss
     mmd_function_recon = MMD_loss(fix_sigma=MMD_sigma, kernel_num=kernel_num)
-    if gamma1 > 0:
-        recon_mmd = mmd_function_recon(x_recon, x)
-    else:
-        recon_mmd = 0
-    if gamma2 > 0:
+    if reconstruction_loss == 'mse':
         recon_mse = nn.MSELoss()(x_recon, x)
-    else:
+        recon_mmd = 0
+        assert gamma1 == 1, "gamma1 should be 1 for reconstruction loss = 'mse'"
+    elif reconstruction_loss == 'mmd':
         recon_mse = 0
-    recon_loss = gamma1*recon_mmd + gamma2*recon_mse
+        recon_mmd = mmd_function_recon(x_recon, x)
+        assert gamma1 == 0, "gamma1 should be 0 for reconstruction loss = 'mmd'"
+    elif reconstruction_loss == 'mmd_mse_both':
+        recon_mse = nn.MSELoss()(x_recon, x)
+        if gamma1 == 1:
+            recon_mmd = 0 # avoid computing MMD to save time
+        else:
+            recon_mmd = mmd_function_recon(x_recon, x)
+    recon_loss = (1-gamma1)*recon_mmd + gamma1*recon_mse
     
     # Compute KL divergence
     if logvar is None:
@@ -41,7 +57,7 @@ def loss_function(y_hat, y, x_recon, x, mu, logvar,
     else:
         KLD = -0.5*torch.sum(logvar -(mu.pow(2)+logvar.exp())+1)/x.shape[0]
     
-    return pred_loss, recon_loss, KLD
+    return pred_loss, recon_loss, KLD, pred_mmd, pred_mse, recon_mmd, recon_mse
 
 
 # Training the model
@@ -60,26 +76,19 @@ def train_validate(
         project_name = f'{model}_{opts.dataset_name}_{opts.leave_out_test_set_id}'
         wandb.init(project=project_name, name=savedir.split('/')[-1])  #name should be the run time after fixing the os.makedirs bug
     
-    if model == 'MORPH':
-        mvae = MORPH(
-            dim = opts.dim,
-            c_dim = opts.cdim,
-            opts = opts,
-            device = device
-        )
-    elif model == 'MORPH_no_residual1':
-        mvae = MORPH_no_residual1(
-            dim = opts.dim,
-            c_dim = opts.cdim,
-            opts = opts,
-            device = device
-        )
-    elif model == "MORPH_moe_3expert":
-        mvae = MORPH_moe_3expert(
-            dim = opts.dim,
-            c_dim = opts.cdim,
-            opts = opts,
-            device = device
+    morph_model_dict = {
+        'MORPH': MORPH,
+        'MORPH_no_residual1': MORPH_no_residual1,
+        'MORPH_moe_3expert': MORPH_moe_3expert,
+        'MORPH_no_attention': MORPH_no_attention,
+    }
+
+    if model in morph_model_dict:
+        mvae = morph_model_dict[model](
+            dim=opts.dim,
+            c_dim=opts.cdim,
+            opts=opts,
+            device=device
         )
     else:
         raise ValueError(f"Unknown model type: {model}")
@@ -178,9 +187,10 @@ def train_validate(
             else:
                 y_hat, x_recon, z_mu, z_logvar = mvae(x,c_1, c_2)
 
-            mmd_loss, recon_loss, kl_loss = loss_function(y_hat=y_hat, y=y, x_recon=x_recon, x=x, mu=z_mu, logvar=z_logvar, 
-                                                          MMD_sigma=opts.MMD_sigma, kernel_num=opts.kernel_num, 
-                                                          gamma1=opts.Gamma1, gamma2=opts.Gamma2)
+            mmd_loss, recon_loss, kl_loss, \
+                pred_mmd, pred_mse, recon_mmd, recon_mse = loss_function(y_hat, y, x_recon, x, 
+                                                                         z_mu, z_logvar, opts.MMD_sigma, opts.kernel_num, 
+                                                                         opts.Gamma1, opts.Gamma2, opts.reconstruction_loss)
             loss = alpha_schedule[epoch] * mmd_loss + recon_loss + beta_schedule[epoch]*kl_loss
 
             if(recon_loss.isnan()):
@@ -285,9 +295,10 @@ def train_validate(
                 else:
                     y_hat, x_recon, z_mu, z_logvar = mvae(x, c_1, c_2)
                 
-                mmd_loss, recon_loss, kl_loss = loss_function(y_hat=y_hat, y=y, x_recon=x_recon, x=x, mu=z_mu, logvar=z_logvar,
-                                                              MMD_sigma=opts.MMD_sigma, kernel_num=opts.kernel_num, 
-                                                              gamma1=opts.Gamma1, gamma2=opts.Gamma2)
+                mmd_loss, recon_loss, kl_loss, \
+                    pred_mmd, pred_mse, recon_mmd, recon_mse = loss_function(y_hat, y, x_recon, x, z_mu, z_logvar,
+                                                                             opts.MMD_sigma, opts.kernel_num, 
+                                                                             opts.Gamma1, opts.Gamma2, opts.reconstruction_loss)
                 if z_logvar is not None:
                     val_loss = mmd_loss + recon_loss + kl_loss
                 else:

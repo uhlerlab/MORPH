@@ -15,7 +15,7 @@ filterwarnings('ignore')
 import scanpy as sc
 sc.settings.verbosity = 3
 sc.settings.set_figure_params(dpi=80, facecolor='white', frameon=False)
-from scipy.stats import pearsonr
+from scipy.stats import pearsonr, spearmanr
 from sklearn.metrics import r2_score
 
 from inference import *
@@ -161,25 +161,29 @@ def main():
     # Evaluations on DE genes for each perturbation ------------
     mmd_loss_de = {}
     rmse_loss_de = {}
-    mse_loss_de = {}
     r2_de = {}
-    l2_de = {}
-    pearsonr_de = {}
-    # change over control
-    rmse_change_de = {}
-    pearsonr_change_de = {}
     fraction_de = {}
 
     # Evaluations on whole genomes for each perturbation ------------
     mmd_loss_whole = {}
     rmse_loss_whole = {}
-    mse_loss_whole = {}
     r2_whole = {}
-    pearsonr_whole = {}
-    # change over control
-    rmse_change_whole = {}
-    pearsonr_change_whole = {}
     fraction_whole = {}
+    
+    # Metrics using train_ptb_mean as anchor (instead of ctrl_mean)
+    pearsonr_change_train_ptb_de = {}
+    spearmanr_change_train_ptb_de = {}
+    pearsonr_change_train_ptb_whole = {}
+    spearmanr_change_train_ptb_whole = {}
+    
+    # Effects = mean(perturbed) - mean(train_ptb_mean)
+    predicted_effects_train_ptb_de = {}
+    true_effects_train_ptb_de = {}
+    predicted_effects_train_ptb_whole = {}
+    true_effects_train_ptb_whole = {}
+    
+    # Get train_ptb_mean (mean of all training perturbations, excluding test set and non-targeting)
+    train_ptb_mean = adata[~adata.obs['gene'].isin(config['ptb_leave_out_list'] + ['non-targeting'])].X.mean(0)
 
     for pert in tqdm(set(C_y)):
         pert_name = pert
@@ -203,24 +207,34 @@ def main():
 
             # Evaluations on DE genes for each perturbation ------------
             rmse_loss_de[pert_name] = np.sqrt(mse(y_true_deg.mean(0), y_pred_deg.mean(0)))
-            mse_loss_de[pert_name] = mse(y_true_deg.mean(0), y_pred_deg.mean(0))
             r2_de[pert_name] = max(r2_score(y_true_deg.mean(0), y_pred_deg.mean(0)),0)
-            l2_de[pert_name] = np.linalg.norm(y_true_deg.mean(0) - y_pred_deg.mean(0))
-            pearsonr_de[pert_name] = pearsonr(y_true_deg.mean(0), y_pred_deg.mean(0))[0]
-            # change over control
-            rmse_change_de[pert_name] = np.sqrt(mse(y_true_deg.mean(0) - y_ctrl_deg.mean(0), y_pred_deg.mean(0) - y_ctrl_deg.mean(0)))
-            pearsonr_change_de[pert_name] = pearsonr(y_true_deg.mean(0) - y_ctrl_deg.mean(0), y_pred_deg.mean(0) - y_ctrl_deg.mean(0))[0]
             fraction_de[pert_name] = np.sum(np.sign(y_true_deg.mean(0) - y_ctrl_deg.mean(0)) == np.sign(y_pred_deg.mean(0) - y_ctrl_deg.mean(0)))/n_top_deg
+            
+            # Metrics using train_ptb_mean as anchor
+            train_ptb_mean_deg = train_ptb_mean[degs]
+            pearsonr_change_train_ptb_de[pert_name] = pearsonr(y_true_deg.mean(0) - train_ptb_mean_deg, 
+                                                                y_pred_deg.mean(0) - train_ptb_mean_deg)[0]
+            spearmanr_change_train_ptb_de[pert_name] = spearmanr(y_true_deg.mean(0) - train_ptb_mean_deg, 
+                                                                    y_pred_deg.mean(0) - train_ptb_mean_deg)[0]
+            
+            # Store effects for retrieval rank calculation
+            predicted_effects_train_ptb_de[pert_name] = y_pred_deg.mean(0) - train_ptb_mean_deg
+            true_effects_train_ptb_de[pert_name] = y_true_deg.mean(0) - train_ptb_mean_deg
 
             # Evaluations on whole genomes for each perturbation ------------
             rmse_loss_whole[pert_name] = np.sqrt(mse(y_true.mean(0), y_pred.mean(0)))
-            mse_loss_whole[pert_name] = mse(y_true.mean(0), y_pred.mean(0))
             r2_whole[pert_name] = max(r2_score(y_true.mean(0), y_pred.mean(0)),0)
-            pearsonr_whole[pert_name] = pearsonr(y_true.mean(0), y_pred.mean(0))[0]
-            # change over control
-            rmse_change_whole[pert_name] = np.sqrt(mse(y_true.mean(0) - y_ctrl.mean(0), y_pred.mean(0) - y_ctrl.mean(0)))
-            pearsonr_change_whole[pert_name] = pearsonr(y_true.mean(0) - y_ctrl.mean(0), y_pred.mean(0) - y_ctrl.mean(0))[0]
             fraction_whole[pert_name] = np.sum(np.sign(y_true.mean(0) - y_ctrl.mean(0)) == np.sign(y_pred.mean(0) - y_ctrl.mean(0)))/y_true.shape[1]
+            
+            # Metrics using train_ptb_mean as anchor
+            pearsonr_change_train_ptb_whole[pert_name] = pearsonr(y_true.mean(0) - train_ptb_mean, 
+                                                                    y_pred.mean(0) - train_ptb_mean)[0]
+            spearmanr_change_train_ptb_whole[pert_name] = spearmanr(y_true.mean(0) - train_ptb_mean, 
+                                                                        y_pred.mean(0) - train_ptb_mean)[0]
+            
+            # Store effects for retrieval rank calculation
+            predicted_effects_train_ptb_whole[pert_name] = y_pred.mean(0) - train_ptb_mean
+            true_effects_train_ptb_whole[pert_name] = y_true.mean(0) - train_ptb_mean
             
             y_pred_mmd_deg = y_pred_deg
             y_true_mmd_deg = y_true_deg
@@ -256,6 +270,48 @@ def main():
     leave_out_list = config['ptb_leave_out_list']
     assert(len(mmd_loss_de) == len(leave_out_list)), 'The number of perturbations is not the same!'
     assert(set(mmd_loss_de.keys()) == set(leave_out_list)), 'The perturbations are not the same!'
+
+    # Calculate retrieval rank metric
+    # For each perturbation p, compare corr(δ̂_p, δ_p) against corr(δ̂_p, δ_q) for all q ≠ p
+    retrieval_rank_train_ptb_de = {}
+    retrieval_rank_train_ptb_whole = {}
+    
+    if modality == 'rna':
+        processed_perturbations = list(predicted_effects_train_ptb_de.keys())
+        n_perturbations = len(processed_perturbations)
+
+        def compute_retrieval_ranks(pred_dict, true_dict):
+            """Compute retrieval ranks for dictionaries of effects."""
+            result = {}
+            pred_array = np.array([pred_dict[p] for p in processed_perturbations])
+            true_array = np.array([true_dict[p] for p in processed_perturbations])
+            # Center and normalize
+            pred_centered = pred_array - pred_array.mean(axis=1, keepdims=True)
+            true_centered = true_array - true_array.mean(axis=1, keepdims=True)
+            pred_norm = pred_centered / (np.linalg.norm(pred_centered, axis=1, keepdims=True) + 1e-10)
+            true_norm = true_centered / (np.linalg.norm(true_centered, axis=1, keepdims=True) + 1e-10)
+            corr_matrix = np.dot(pred_norm, true_norm.T)
+            for i, p in enumerate(processed_perturbations):
+                true_corr = corr_matrix[i, i]
+                all_corrs = corr_matrix[i, :]
+                mask = np.ones(n_perturbations, dtype=bool)
+                mask[i] = False
+                count = np.sum(true_corr >= all_corrs[mask])
+                result[p] = count / (n_perturbations - 1)
+            return result
+
+        if n_perturbations > 1:
+            # Train PTB metrics
+            retrieval_rank_train_ptb_de.update(compute_retrieval_ranks(predicted_effects_train_ptb_de, true_effects_train_ptb_de))
+            retrieval_rank_train_ptb_whole.update(compute_retrieval_ranks(predicted_effects_train_ptb_whole, true_effects_train_ptb_whole))
+        else:
+            # If only one perturbation, retrieval rank is undefined
+            if processed_perturbations:
+                retrieval_rank_train_ptb_de[processed_perturbations[0]] = np.nan
+                retrieval_rank_train_ptb_whole[processed_perturbations[0]] = np.nan
+    else:
+        # For ops data, retrieval rank is undefined
+        print('Retrieval rank is not implemented for ops data')
 
     print('Test set:', leave_out_test_set_id)
     print(set(C_y))
@@ -296,16 +352,6 @@ def main():
         print('mean', '%.5f'%(rmse_whole))
         print('ste', np.std([i for i in rmse_loss_whole.values()])/np.sqrt(len(rmse_loss_whole.keys())))
 
-        print('morph, mse')
-        mse_de = np.mean([i for i in mse_loss_de.values()])
-        print('mean', '%.5f'%(mse_de))
-        print('ste', np.std([i for i in mse_loss_de.values()])/np.sqrt(len(mse_loss_de.keys())))
-
-        print('morph, mse (whole genome)')
-        mse_whole = np.mean([i for i in mse_loss_whole.values()])
-        print('mean', '%.5f'%(mse_whole))
-        print('ste', np.std([i for i in mse_loss_whole.values()])/np.sqrt(len(mse_loss_whole.keys())))
-
         print('morph, r2')
         r2_de_mean = np.mean([i for i in r2_de.values()])
         print('mean', '%.5f'%(r2_de_mean))
@@ -316,55 +362,61 @@ def main():
         print('mean', '%.5f'%(r2_whole_mean))
         print('ste', np.std([i for i in r2_whole.values()])/np.sqrt(len(r2_whole.keys())))
 
-        print('morph, l2')
-        l2_de_mean = np.mean([i for i in l2_de.values()])
-        print('mean', '%.5f'%(l2_de_mean))
-
-        print('morph, pearsonr')
-        pearsonr_de_mean = np.nanmean([i for i in pearsonr_de.values()]) #some ptb has nan pearsonr as their true degs might be all 0s
-        print('mean', '%.5f'%(pearsonr_de_mean))
-
-        print('morph, pearsonr (whole genome)')
-        pearsonr_whole_mean = np.mean([i for i in pearsonr_whole.values()])
-        print('mean', '%.5f'%(pearsonr_whole_mean))
-
-        # change over control checks
-        print('morph, rmse change')
-        rmse_change_de_mean = np.mean([i for i in rmse_change_de.values()])
-        print('mean', '%.5f'%(rmse_change_de_mean))
-
-        print('morph, pearsonr change')
-        pearsonr_change_de_mean = np.mean([i for i in pearsonr_change_de.values()])
-        print('mean', '%.5f'%(pearsonr_change_de_mean))
-
         print('morph, fraction of DE genes with same direction')
         fraction_de_mean = np.mean([i for i in fraction_de.values()])
         print('mean', '%.5f'%(fraction_de_mean))
 
-        print('morph, rmse change (whole genome)')
-        rmse_change_whole_mean = np.mean([i for i in rmse_change_whole.values()])
-        print('mean', '%.5f'%(rmse_change_whole_mean))
-
-        print('morph, pearsonr change (whole genome)')
-        pearsonr_change_whole_mean = np.mean([i for i in pearsonr_change_whole.values()])
-        print('mean', '%.5f'%(pearsonr_change_whole_mean))
-
         print('morph, fraction of DE genes with same direction (whole genome)')
         fraction_whole_mean = np.mean([i for i in fraction_whole.values()])
         print('mean', '%.5f'%(fraction_whole_mean))
+        
+        # Metrics using train_ptb_mean as anchor
+        print('morph, pearsonr change (train_ptb anchor, DE genes)')
+        pearsonr_change_train_ptb_de_mean = np.nanmean([i for i in pearsonr_change_train_ptb_de.values()]) if pearsonr_change_train_ptb_de else np.nan
+        print('mean', '%.5f'%(pearsonr_change_train_ptb_de_mean))
+        
+        print('morph, spearmanr change (train_ptb anchor, DE genes)')
+        spearmanr_change_train_ptb_de_mean = np.nanmean([i for i in spearmanr_change_train_ptb_de.values()]) if spearmanr_change_train_ptb_de else np.nan
+        print('mean', '%.5f'%(spearmanr_change_train_ptb_de_mean))
+        
+        print('morph, pearsonr change (train_ptb anchor, whole genome)')
+        pearsonr_change_train_ptb_whole_mean = np.nanmean([i for i in pearsonr_change_train_ptb_whole.values()]) if pearsonr_change_train_ptb_whole else np.nan
+        print('mean', '%.5f'%(pearsonr_change_train_ptb_whole_mean))
+        
+        print('morph, spearmanr change (train_ptb anchor, whole genome)')
+        spearmanr_change_train_ptb_whole_mean = np.nanmean([i for i in spearmanr_change_train_ptb_whole.values()]) if spearmanr_change_train_ptb_whole else np.nan
+        print('mean', '%.5f'%(spearmanr_change_train_ptb_whole_mean))
+        
+        print('morph, retrieval rank (train_ptb anchor, DE genes)')
+        retrieval_rank_train_ptb_de_mean = np.nanmean([i for i in retrieval_rank_train_ptb_de.values()]) if retrieval_rank_train_ptb_de else np.nan
+        print('mean', '%.5f'%(retrieval_rank_train_ptb_de_mean))
+        
+        print('morph, retrieval rank (train_ptb anchor, whole genome)')
+        retrieval_rank_train_ptb_whole_mean = np.nanmean([i for i in retrieval_rank_train_ptb_whole.values()]) if retrieval_rank_train_ptb_whole else np.nan
+        print('mean', '%.5f'%(retrieval_rank_train_ptb_whole_mean))
+    else:
+        # Initialize variables for non-RNA modalities
+        pearsonr_change_train_ptb_de_mean = None
+        spearmanr_change_train_ptb_de_mean = None
+        pearsonr_change_train_ptb_whole_mean = None
+        spearmanr_change_train_ptb_whole_mean = None
+        retrieval_rank_train_ptb_de_mean = None
+        retrieval_rank_train_ptb_whole_mean = None
 
     ### Save results -----------------------------------
     df = pd.DataFrame()
     df['pert'] = mmd_loss_de_summary.keys()
     df['mmd_de'] = [i[0] for i in mmd_loss_de_summary.values()]
     if modality == 'rna':
-        df['rmse_de'] = [i for i in rmse_loss_de.values()]
-        df['mse_de'] = [i for i in mse_loss_de.values()]
-        df['r2_de'] = [i for i in r2_de.values()]
-        df['pearsonr_de'] = [i for i in pearsonr_de.values()]
-        df['rmse_change_de'] = [i for i in rmse_change_de.values()]
-        df['pearsonr_change_de'] = [i for i in pearsonr_change_de.values()]
-        df['fraction_de'] = [i for i in fraction_de.values()] 
+        df['rmse_de'] = [rmse_loss_de.get(k, np.nan) for k in df['pert']]
+        df['r2_de'] = [r2_de.get(k, np.nan) for k in df['pert']]
+        df['fraction_de'] = [fraction_de.get(k, np.nan) for k in df['pert']]
+        df['retrieval_rank_train_ptb_de'] = [retrieval_rank_train_ptb_de.get(k, np.nan) for k in df['pert']]
+        df['retrieval_rank_train_ptb_whole'] = [retrieval_rank_train_ptb_whole.get(k, np.nan) for k in df['pert']]
+        df['pearsonr_change_train_ptb_de'] = [pearsonr_change_train_ptb_de.get(k, np.nan) for k in df['pert']]
+        df['spearmanr_change_train_ptb_de'] = [spearmanr_change_train_ptb_de.get(k, np.nan) for k in df['pert']]
+        df['pearsonr_change_train_ptb_whole'] = [pearsonr_change_train_ptb_whole.get(k, np.nan) for k in df['pert']]
+        df['spearmanr_change_train_ptb_whole'] = [spearmanr_change_train_ptb_whole.get(k, np.nan) for k in df['pert']] 
 
     # save this df into csv file
     csv_output_path = most_recent_run_dir+ '/' + model_name.replace('.pt', '') + '_evaluations.csv'
@@ -386,21 +438,18 @@ def main():
         'mmd_whole': mmd_whole,
         'r2_de': r2_de_mean if modality == 'rna' else None,
         'r2_whole': r2_whole_mean if modality == 'rna' else None,
-        'l2_de': l2_de_mean if modality == 'rna' else None,
-        'mse_de': mse_de if modality == 'rna' else None,
-        'mse_whole': mse_whole if modality == 'rna' else None,
         'rmse_de': rmse_de if modality == 'rna' else None,
         'rmse_whole': rmse_whole if modality == 'rna' else None,
-        'pearsonr_de': pearsonr_de_mean if modality == 'rna' else None,
-        'pearsonr_whole': pearsonr_whole_mean if modality == 'rna' else None,
-        'rmse_change': rmse_change_de_mean if modality == 'rna' else None,
-        'rmse_change_whole': rmse_change_whole_mean if modality == 'rna' else None,
-        'pearsonr_change': pearsonr_change_de_mean if modality == 'rna' else None,
-        'pearsonr_change_whole': pearsonr_change_whole_mean if modality == 'rna' else None,
         'fraction': fraction_de_mean if modality == 'rna' else None,
         'fraction_whole': fraction_whole_mean if modality == 'rna' else None,
+        'pearsonr_change_train_ptb': pearsonr_change_train_ptb_de_mean if modality == 'rna' else None,
+        'spearmanr_change_train_ptb': spearmanr_change_train_ptb_de_mean if modality == 'rna' else None,
+        'pearsonr_change_train_ptb_whole': pearsonr_change_train_ptb_whole_mean if modality == 'rna' else None,
+        'spearmanr_change_train_ptb_whole': spearmanr_change_train_ptb_whole_mean if modality == 'rna' else None,
+        'retrieval_rank_train_ptb_de': retrieval_rank_train_ptb_de_mean if modality == 'rna' else None,
+        'retrieval_rank_train_ptb_whole': retrieval_rank_train_ptb_whole_mean if modality == 'rna' else None,
         'model_path': most_recent_run_dir,
-        'note': 'top 50 marker genes' if modality == 'rna' else 'ops data'
+        'note': 'top 50 marker genes for _de and whole genome for _whole' if modality == 'rna' else 'ops data'
     }])
     
     # save this df into csv file

@@ -646,3 +646,119 @@ class MORPH_moe_3expert(nn.Module):
                 return y_hat, x_recon, mu, var, z_ptb_ft
             else:
                 return y_hat, x_recon, mu, var
+
+class MORPH_no_attention(nn.Module):
+    '''
+    Variant of MORPH without attention mechanisms - ablation study model
+    '''
+    def __init__(self, dim, c_dim, 
+                 opts,
+                 device=None):
+        
+        super(MORPH_no_attention, self).__init__()
+        
+        if device is None:
+            self.cuda = False
+            self.device = 'cpu'
+        else:
+            self.device = device
+            self.cuda = True
+        
+        self.z_dim_gene = opts.latdim_ctrl #latent dimension for gene decoder
+        self.z_dim_ptb = opts.latdim_ptb #latent dimension for perturbation decoder
+        self.c_dim = c_dim #input dimension for perturbation decoder
+        self.dim = dim #input dimension for gene-expression decoder
+        # Use hidden_dim_ablation if available, otherwise fall back to hidden_dim
+        self.hidden_dim = getattr(opts, 'hidden_dim_ablation', opts.hidden_dim)
+
+        if opts.null_label == 'zeros':
+            self.null_label = torch.zeros(1, self.c_dim).double().to(self.device)
+        elif opts.null_label == 'gaussian':
+            null_folder = f'{opts.base_dir}/data/gene_ptb_emb/Null/dim_{self.c_dim}/null_vector.npy'
+            self.null_label = torch.tensor(np.load(null_folder)).double().to(self.device)
+        elif opts.null_label == 'gaussian_normalized':
+            null_folder = f'{opts.base_dir}/data/gene_ptb_emb/Null/dim_{self.c_dim}/normalized_vector.npy'
+            self.null_label = torch.tensor(np.load(null_folder)).double().to(self.device)
+
+        # Gene-expression encoder
+        self.fc1 = nn.Linear(self.dim, 512)
+        self.fc2 = nn.Linear(512, self.hidden_dim)
+        self.fc_mean = nn.Linear(self.hidden_dim, self.z_dim_gene)
+        self.fc_var = nn.Linear(self.hidden_dim, self.z_dim_gene)
+
+        # Perturbation encoder
+        if self.z_dim_ptb > 150:
+            self.c1 = nn.Linear(self.c_dim, 512) #c_dim -> hids
+            self.c2 = nn.Linear(512, 256) #c_dim -> hids
+            self.c3 = nn.Linear(256, self.z_dim_ptb) #c_dim -> hids
+            if self.z_dim_ptb > 256:
+                raise ValueError("z_dim_ptb should be less than or equal to 256")
+        else:
+            self.c1 = nn.Linear(self.c_dim, 200) #c_dim -> hids
+            self.c2 = nn.Linear(200, 150) #c_dim -> hids
+            self.c3 = nn.Linear(150, self.z_dim_ptb) #c_dim -> hids
+        
+        # Decoder MLP
+        self.d1 = nn.Linear(self.z_dim_gene + self.z_dim_ptb, self.hidden_dim) #z_dim -> hidden_dim
+        self.d2 = nn.Linear(self.hidden_dim, self.dim) #hidden_dim -> dim
+        
+        # activation functions
+        self.leakyrelu = nn.LeakyReLU(0.2)
+
+    def encode(self, x):
+        'Encoder for gene-expression data'
+        h = self.leakyrelu(self.fc1(x))
+        h = self.leakyrelu(self.fc2(h))
+        return self.fc_mean(h), self.fc_var(h)
+    
+    def c_encode(self, c):
+        'Encoder for perturbation label'
+        h = self.leakyrelu(self.c1(c))
+        h = self.leakyrelu(self.c2(h))
+        return self.leakyrelu(self.c3(h))
+    
+    def reparametrize(self, mu, logvar):
+        std = torch.exp(logvar/2)
+        eps = torch.randn_like(std)
+        return eps.mul(std).add_(mu)
+
+    def decode(self, u):
+        'Decoder for gene-expression data'        
+        h = self.leakyrelu(self.d1(u))
+        h = self.leakyrelu(self.d2(h))
+        return h
+
+    def forward(self, x, c_1, c_2, gene_set_mtrx = None, return_latents = False):
+
+        # encode perturbation label
+        z_ptb_1 = self.c_encode(c_1)
+        z_ptb_2 = None
+        c_2_test = c_2.detach().cpu().numpy()
+        if not np.all(np.isnan(c_2_test)):
+            z_ptb_2 = self.c_encode(c_2)
+            del c_2_test
+        if z_ptb_2 is not None:
+            z_ptb_ft = z_ptb_1 + z_ptb_2
+        else:
+            z_ptb_ft = z_ptb_1
+
+        # encode control label
+        control_label = self.null_label.repeat(c_1.size(0), 1)
+        z_control = self.c_encode(control_label)
+
+        # encode gene-expression data
+        mu, var = self.encode(x)
+        z = self.reparametrize(mu, var)
+
+        # y_hat --------------------------------
+        z_ptb = torch.cat((z, z_ptb_ft), dim=1)
+        y_hat = self.decode(z_ptb)
+        
+        # x_recon --------------------------------
+        z_control = torch.cat((z, z_control), dim=1)
+        x_recon = self.decode(z_control)
+        
+        if return_latents:
+            return y_hat, x_recon, mu, var, z_ptb_ft
+        else:
+            return y_hat, x_recon, mu, var

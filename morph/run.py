@@ -24,6 +24,7 @@ def main(args):
 		grad_clip = True,
 		kernel_num = 10,
 		hidden_dim = 128,
+		hidden_dim_ablation = 120,
 		matched_IO = False
 	)
 	
@@ -43,6 +44,7 @@ def main(args):
 	opts.batch_size = args.batch_size
 	opts.tolerance_epochs = args.tolerance_epochs
 	opts.MMD_sigma = args.MMD_sigma
+	opts.reconstruction_loss = args.reconstruction_loss
 	opts.mxAlpha = args.mxAlpha
 	opts.mxBeta = args.mxBeta
 	opts.Gamma1 = args.Gamma1
@@ -130,11 +132,12 @@ if __name__ == '__main__':
 	parser.add_argument('--epochs', type=int, default=100, help='number of epochs to run the training')
 	parser.add_argument('--tolerance_epochs', type=int, default=20, help='number of epochs to tolerate before early stopping')
 	parser.add_argument('--batch_size', type=int, default=32, help='batch size')
-	parser.add_argument('--MMD_sigma', type=int, default=1500, help='sigma for MMD loss')
+	parser.add_argument('--MMD_sigma', type=float, default=1500, help='sigma for MMD loss')
+	parser.add_argument('--reconstruction_loss', type=str, default='mmd', help='reconstruction loss to use (mse, mmd)')
 	parser.add_argument('--mxAlpha', type=float, default=2, help='alpha for MMD loss')
 	parser.add_argument('--mxBeta', type=float, default=2, help='beta for KL loss')
-	parser.add_argument('--Gamma1', type=float, default=1, help='gamma for reconstruction loss (MMD)')
-	parser.add_argument('--Gamma2', type=float, default=0, help='gamma for reconstruction loss (MSE)')
+	parser.add_argument('--Gamma1', type=float, default=0, help='gamma for reconstruction MSE loss')
+	parser.add_argument('--Gamma2', type=float, default=0, help='gamma for prediction MSE loss')
 	parser.add_argument('--validation_set_ratio', type=float, default=0.1, help='ratio of validation set (*total_training_candidates)')
 	parser.add_argument('--validation_ood_ratio', type=float, default=0.15, help='ratio of ood validation set (*validation_set), default: 0.15')
 	parser.add_argument('--latdim_ctrl', type=int, default=50, help='latent dimension of control cell encoder')

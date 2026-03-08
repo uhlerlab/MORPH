@@ -13,10 +13,11 @@ null_label='zeros' # 'gaussian_normalized' or 'gaussian' or 'zeros'
 epochs=100
 tolerance_epochs=20 #set to 20 by default
 MMD_sigma=1500
+reconstruction_loss='mmd' # 'mmd' or 'mse' or 'mmd_mse_both'
 mxAlpha=2 # set to 2 by default
 mxBeta=2 # set to 2 by default
-Gamma1=1 #hyperparameter for reconstruction loss (MMD), range 0-1
-Gamma2=0 #hyperparameter for reconstruction loss (MSE), range 0-1
+Gamma1=0 #hyperparameter for reconstruction MSE loss, range 0-1
+Gamma2=0 #hyperparameter for prediction MSE loss, range 0-1
 latdim_ctrl=50
 latdim_ptb=50
 geneset_num=50
@@ -46,6 +47,7 @@ do
                           --epochs "$epochs" \
                           --tolerance_epochs "$tolerance_epochs" \
                           --MMD_sigma "$MMD_sigma" \
+                          --reconstruction_loss "$reconstruction_loss" \
                           --mxAlpha "$mxAlpha" \
                           --mxBeta "$mxBeta" \
                           --Gamma1 "$Gamma1" \
